@@ -80,7 +80,7 @@ n_pilas,max_prof = len(mapa), len(mapa[0])
 print("Generamos mapa: ")
 print(drawMap(mapa))
 
-print("Max prof",max_prof)
+
 
 
 #--------------------------------------------------------
@@ -91,12 +91,22 @@ def notEqual (a:list,b:list):
 		return False
 	return True
 
-def isOccupied (cell: list):
-	'''método que toma una celda y devuelve si está ocupada'''	
-	return mapa[cell[0]][cell[1]] =="X" 
-	
-	#comprobamos si la fila de abajo es accesible
-	
+#esto está mal
+def apilados(a:list,b:list):
+	"""método que, si dos contenedores están en la misma pila, comprueba que no flotan"""
+
+	#después de haber hecho la comprobación de que están en la misma pila
+	ya = a[0]
+	yb = b[0]
+
+	if ya == yb:
+		xa = a[1]
+		xb = b[1]
+
+		for i in range(xa,xb):
+			if mapa[i][y] == "X":
+				return False
+	return True
 
 
 def isLowPort(c1:list,c2:list):
@@ -146,6 +156,11 @@ for x in range(len(mapa)):
 usable_cells = energy_cells + normal_cells
 
 
+print("Energy cells: ",energy_cells)
+print("Normal cells: ",normal_cells)
+print("Total cells: ",usable_cells)
+
+
 
 #en este punto, se da valores de los dominios a las variables 
 for r in refrigerados:
@@ -169,28 +184,14 @@ for i in range(len(refrigerados)):
 		if i != j:
 			problem.addConstraint(notEqual,(refrigerados[i][0],refrigerados[j][0])) #tiene que comprobar de dos en dos contenedores (aridad 2)
 
-			#colocamos los contenedores de puerto 1 arriba y los de puerto 2 abajo en una misma pila
-			yi = refrigerados[i][0][0] #pila de contenedor i
-			yj = refrigerados[j][0][0] #pila de contenedor j 
-
-			
-			if (yi == yj): #si están en la misma pila
-				print("En la misma pila")
-				problem.addConstraint(isLowPort, (refrigerados[i],refrigerados[j])) ##tiene que comprobar de dos en dos contenedores (aridad 2)
-
-#el resto de contenedores tiene que tener posiciones diferentes
+			problem.addConstraint(apilados, (refrigerados[i][0],refrigerados[j][0])) ##tiene que comprobar de dos en dos contenedores (aridad 2)
+#resto de contenedores
 for i in range(len(normales)):
-	
+
 	for j in range(i+1, len(normales)):
 		if i != j:
 			problem.addConstraint(notEqual,(normales[i][0],normales[j][0])) #tiene que comprobar de dos en dos contenedores (aridad 2)
-
-			#colocamos los contenedores de puerto 1 arriba y los de puerto 2 abajo en una misma pila
-			yi = normales[i][0][0] #pila de contenedor i
-			yj = normales[j][0][0] #pila de contenedor j 
-
-			if (yi == yj): #si están en la misma pila
-				problem.addConstraint(isLowPort, (normales[i],normales[j])) ##tiene que comprobar de dos en dos contenedores (aridad 2)
+			problem.addConstraint(apilados, (normales[i][0],normales[j][0])) ##tiene que comprobar de dos en dos contenedores (aridad 2)
 
 
 #-----------------------------------------------------
