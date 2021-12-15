@@ -120,10 +120,11 @@ class Node:
 		self.children = [] #lista de nodos hijos
 		self.parent = parent #si tiene nodo padre o no
 		self.dist = 0 #distancia del nodo al nodo inicial (ver si se puede usar)
-		
+		self.contenedores = contenedores
+		self.puerto = puerto
+		self.content = [self.contenedores,self.puerto]
 
 		#contenido del nodo
-		self.state = State(self.contenedores,self.puerto)
 
 
 		if parent:
@@ -153,15 +154,18 @@ class Node:
 
 			if carga:#si se puede cargar, cargamos el contenedor y creamos nuevo nodo
 				#carga
+				print("Cargando: ")
 				contenedor,coste,new_mapa,new_asignados = self.cargar(cont,self.mapa) #carga el contenedor
 
-				if contenedor != self.contenedores[cont]:
-					new_contenedores[cont] = contenedor#actualiza lista
-					new_node = self.generateNode(new_contenedores,coste,new_asignados,new_mapa)
-					self.children.append(new_node)
+			else: #hay que descargar (o navegar)
+				print("Descargando: ")
+				contenedor,coste,new_mapa,new_asignados = self.descargar(cont,self.mapa) #carga el contenedor
 
 
-
+			if contenedor != self.contenedores[cont]:
+				new_contenedores[cont] = contenedor  # actualiza lista
+				new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa)
+				self.children.append(new_node)
 			
 
 	
@@ -171,33 +175,33 @@ class Node:
 
 
 		id,coste,x,y = array_contenedores[posicion][0],0,-1,-1
+
 		contenedor,new_mapa,new_asignados = copy.deepcopy(self.contenedores[posicion]),copy.deepcopy(mapa),copy.deepcopy(self.asignados)
 		
 		while not self.comprobar_valido(x,y):
-			x,y = random.randint(0,len(new_mapa)-1),random.randint(0,len(new_mapa[0])-1)
+			x,y = random.randint(0,len(new_mapa)-1),random.randint(0,len(new_mapa[0])-1)#hay que comprobar cada posición válida en vez de ser aleatorio
 
 		
 		if self.contenedores[posicion][2] != "B":
-			contenedor[0], contenedor[1],contenedor[2]= x,y,"B"
+			contenedor = [x,y,"B"]
 			new_mapa[x][y] = str(id) #guardamos el id en la celda
-			new_asignados[id] = (contenedor[0],contenedor[1])
+			new_asignados[id] = (x,y)
 			coste = 10 + (x+1) #coste = 10 + nº de filas 
 		
 		return contenedor,coste,new_mapa,new_asignados #devuelve contenedor y el coste asociado
 
 
-	def descargar(self,posicion:int):
+	def descargar(self,posicion:int,mapa:list):
 		"""método que coge contenedor y lo descarga de la lista de contenedores"""
-		contenedor = copy.deepcopy(self.contenedores[posicion])
-		new_mapa = copy.deepcopy(mapa) #hace una copia
-		new_asignados = copy.deepcopy(self.asignados) #copia de asignados
+		contenedor, new_mapa, new_asignados = copy.deepcopy(self.contenedores[posicion]), copy.deepcopy(mapa), copy.deepcopy(self.asignados)
+		x,y = contenedor[0],contenedor[1] #posiciones previamente guardadas
+		id = array_contenedores[posicion][0]
 
-
-		x,y = contenedor[posicion][0],contenedor[posicion][1] #posiciones previamente guardadas
-		contenedor[posicion][0],contenedor[posicion][1],contenedor[posicion][2] = None,None, self.puerto#desasigna su posición
+		contenedor = [None,None,self.puerto]#desasigna su posición
+		new_asignados.pop(id) #borra el elemento de la lista de asignados
 		new_mapa[x][y] = self.devolver_tipo(self.contenedores[posicion]) #devolvemos a la casilla que había
-		coste = 15 + 2*(x+1) #coste = 10 + nº de filas 
-		return coste #devuelve el coste de descargar
+		coste = 15 + 2*(x+1) #coste = 10 + nº de filas
+		return contenedor,coste,new_mapa,new_asignados #devuelve el coste de descargar
 
 
 
@@ -282,7 +286,7 @@ nodo_inicial = Node(contenedores_iniciales,puerto_inicial,None,mapa)
 
 lista = [nodo_inicial] 
 contador = 1
-while len(lista) > 0:
+for i in range(20):
 	print("Iteracion: ",contador)
 	n = lista.pop(0) #coge el primero de la lista
 	n.expandir() #lo expande
