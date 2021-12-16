@@ -113,6 +113,7 @@ class State:
         var = "Contenedores: " + str(self.contenedores) + "\n"
         var += str(drawMap(self.mapa)) + "\n"
         var += str(self.asignados)
+        var += "\nPuerto del barco: " + str(self.puerto_del_barco) + "\n"
         return var
 
 
@@ -142,14 +143,37 @@ class Node:
                 new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
                                              self.state.puerto_del_barco)  # generamos un nuevo nodo
                 action = self.checkAction(cont)  # comprueba que hacer: si cargar o descargar
+
                 if action == "carga":  # hay que cargar
                     new_node.cargar(cont, x, y)
 
                 if action == "descarga":  # hay que descargar
+                    print("Aquí")
                     new_node.descargar(cont, x, y)
 
                 if new_contenedores[cont] != self.state.contenedores[cont] and action:
                     self.children.append(new_node)  # añade el nodo a los hijos
+
+        # después de comprobar si puede cargar y descargar cada contenedor, comprueba si puede navegar
+        if self.checkNavigate():
+            new_node = self.generateNode(self.state.contenedores, self.g + 3500, self.state.asignados, self.state.mapa,
+                                         self.state.puerto_del_barco + 1)  # generamos nuevo nodo
+            self.children.append(new_node)  # añade a children
+
+    def checkNavigate(self):
+        """método para comprobar si tiene que navegar"""
+        # print(self.state.contenedores)
+        for c in range(
+                len(self.state.contenedores)):  # recorre todos los contenedores y comprueba si están cargados/descargados
+
+            puerto_contenedor = self.state.contenedores[c][2]
+            puerto_destino = int(array_contenedores[c][2])
+            # queda contenedor por descargar/cargar
+            if (puerto_contenedor == "B" and puerto_destino == self.state.puerto_del_barco) or (
+                    puerto_contenedor != "B" and puerto_contenedor < puerto_destino):  # quedan contenedores por descargar
+                return False
+
+        return True  # tiene que navegar, todos están en el barco
 
     def cargar(self, posicion: int, x: int, y: int):
         """Busca por posición y lo carga"""
@@ -247,45 +271,54 @@ for cont in array_contenedores:
 print("-------------------------------------------------------")
 
 contenedores_iniciales = []
+contenedores_finales = []
 for cont in array_contenedores:
     contenedores_iniciales.append([None, None, 0])
+    contenedores_finales.append([None, None, int(cont[2])])
 
 # --------------------------------------------------------
 
 puerto_inicial = 0
 estado_inicial = State(contenedores_iniciales, puerto_inicial, mapa)  # estado inicial
+estado_final = State(contenedores_finales, puerto_final, mapa)
+
 nodo_inicial = Node(estado_inicial)
+nodo_final = Node(estado_final)
 print(nodo_inicial)
 
 print("Cargamos: ")
 nodo_inicial.cargar(0, 1, 0)
+nodo_inicial.cargar(1, 1, 1)
+nodo_inicial.cargar(2, 0, 1)
 
 print(nodo_inicial)
 
 print("Descargamos:")
 nodo_inicial.descargar(0)
+nodo_inicial.descargar(2)
+nodo_inicial.descargar(1)
 
 print(nodo_inicial)
 
 '''
-
 lista = [nodo_inicial]
+n = ""
 
-for i in range(3):
-    print("\nExpandimos: ")
+
+while len(lista) > 0 and n != nodo_final:
 
     n = lista.pop(0) #quita el primero
     n.expandir()
     for child in n.children:
         lista.append(child)
-        print(child)
+        #print(child)
 
 
 
 
 
-
-
+'''
+'''
 lista = [nodo_inicial]
 contador = 1
 while len(lista) > 0:
