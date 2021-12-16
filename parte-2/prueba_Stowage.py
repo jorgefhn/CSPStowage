@@ -119,26 +119,12 @@ class Node:
 	def __init__(self,contenedores:list,puerto:int,parent,mapa:list):
 		self.children = [] #lista de nodos hijos
 		self.parent = parent #si tiene nodo padre o no
-		self.dist = 0 #distancia del nodo al nodo inicial (ver si se puede usar)
 		self.contenedores = contenedores
 		self.puerto = puerto
 		self.content = [self.contenedores,self.puerto]
-
-		#contenido del nodo
-
-
-		if parent:
-			self.path = copy.deepcopy(parent.path) #camino hasta el nodo inicial 
-			self.g = parent.g #coge el coste acumulado del nodo parent
-			self.mapa = copy.deepcopy(parent.mapa) #mapa del padre
-
-
-		else:
-			#es el nodo inicial
-			self.path = [self.content] 
-			self.asignados = {}
-			self.g = 0 #coste acumulado = 0 al inicio
-			self.mapa = mapa
+		self.asignados = {}
+		self.g = 0 #coste acumulado = 0 al inicio
+		self.mapa = mapa
 
 
 
@@ -194,7 +180,7 @@ class Node:
 		if self.comprobar_valido(x,y):
 			contenedor = [None,None,self.puerto]#desasigna su posición
 			new_asignados.pop(id) #borra el elemento de la lista de asignados
-			new_mapa[x][y] = self.devolver_tipo(self.contenedores[posicion]) #devolvemos a la casilla que había
+			new_mapa[x][y] = self.devolver_tipo(posicion) #devolvemos a la casilla que había
 			coste = 15 + 2*(x+1) #coste = 10 + nº de filas
 
 		return contenedor,coste,new_mapa,new_asignados #devuelve el coste de descargar
@@ -238,20 +224,18 @@ class Node:
 		return (x,y) not in valores and mapa[x][y] != "X" and ( (x < max_prof-1 and (mapa[x+1][y] == "X" or (x+1,y) in valores)) or (x == max_prof-1))
 		
 		
-	def devolver_tipo(self,contenedor:list):
+	def devolver_tipo(self,posicion:int):
 		"""método auxiliar para devolver el tipo de celda que tiene que retornar al mapa según el tipo de contenedor"""
-		pos = -1
-
-		for cont in range(len(array_contenedores)):
-			if array_contenedores[cont][0] == contenedor[2]: #busca la coincidencia por el id
-				pos = cont
-
 		correspondencias = {'S':'N','R':'E'}
-
-		return str((correspondencias[array_contenedores[pos][1]]))
+		return str((correspondencias[array_contenedores[posicion][1]]))
 		
 
 	def checkAction(self,contenedores:list,asignados:list):
+		#caso 1: tiene que descargar
+		self.puerto
+		#caso 2: tiene que cargar
+
+		#caso 3: tiene que navegar
 		return len(self.asignados) < len(self.contenedores)
 
 
