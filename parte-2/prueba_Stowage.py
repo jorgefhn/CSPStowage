@@ -111,7 +111,8 @@ class State:
 
     def __str__(self):
         var = "Contenedores: " + str(self.contenedores) + "\n"
-        var += str(drawMap(self.mapa))
+        var += str(drawMap(self.mapa)) + "\n"
+        var += str(self.asignados)
         return var
 
 
@@ -132,47 +133,33 @@ class Node:
         posibles_coordenadas = self.generateCoordinates()  # genera las posibles coordenadas
 
         for cont in range(len(self.state.contenedores)):
-            for pos in posibles_coordenadas:
-
-                # todo esto hay que encapsularlo
+            for pos in posibles_coordenadas:  # por cada posible combinación
                 x, y = pos[0], pos[1]
-
                 new_contenedores = copy.deepcopy(
                     self.state.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
                 coste, contenedor, new_mapa, new_asignados = self.generateParams(cont)[1:]
-                # hasta aquí
 
+                new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
+                                             self.state.puerto_del_barco)  # generamos un nuevo nodo
                 action = self.checkAction(cont)  # comprueba que hacer: si cargar o descargar
-
                 if action == "carga":  # hay que cargar
-                    print("Cargando: ")
-                    contenedor, coste, new_mapa, new_asignados = self.cargar(cont, x, y)  # carga el contenedor
-                    print("después de la carga: ", new_asignados)
+                    new_node.cargar(cont, x, y)
 
                 if action == "descarga":  # hay que descargar
-                    print("Descargando: ")
-                    contenedor, coste, new_mapa, new_asignados = self.descargar(cont)  # carga el contenedor
+                    new_node.descargar(cont, x, y)
 
-                # generación de nuevo nodo
-                if contenedor != self.state.contenedores[cont]:
-                    new_contenedores[cont] = contenedor  # actualiza lista
-
-                    self.generateNode(new_contenedores, coste, new_asignados, new_mapa, self.state.puerto_del_barco)
+                if new_contenedores[cont] != self.state.contenedores[cont] and action:
+                    self.children.append(new_node)  # añade el nodo a los hijos
 
     def cargar(self, posicion: int, x: int, y: int):
         """Busca por posición y lo carga"""
-        id, coste, contenedor, new_mapa, new_asignados = self.generateParams(
-            posicion)  # cogemos los parámetros que vamos a usar
+        id = array_contenedores[posicion][0]  # cogemos el id del contenedor
 
-        print("Valores en la carga: ", self.state.asignados.values())
         if self.state.contenedores[posicion][2] != "B" and self.comprobar_no_asignado(x, y):
-            contenedor = [x, y, "B"]
-            new_mapa[x][y] = str(id)  # guardamos el id en la celda
-            new_asignados[id] = (x, y)
-            print(new_asignados)
-            coste = 10 + (x + 1)  # coste = 10 + nº de filas
-
-        return contenedor, coste, new_mapa, new_asignados  # devuelve contenedor y el coste asociado
+            self.state.contenedores[posicion] = [x, y, "B"]
+            self.state.mapa[x][y] = str(id)  # guardamos el id en la celda
+            self.state.asignados[id] = (x, y)
+            self.g += 10 + (x + 1)  # coste = 10 + nº de filas
 
     def descargar(self, posicion: int):
         """método que coge contenedor y lo descarga de la lista de contenedores"""
@@ -181,12 +168,10 @@ class Node:
         x, y = contenedor[0], contenedor[1]  # obtenemos las posiciones del contenedore
 
         if self.comprobar_asignado(x, y):
-            contenedor = [None, None, self.state.puerto_del_barco]  # desasigna su posición
-            new_asignados.pop(id)  # borra el elemento de la lista de asignados
-            new_mapa[x][y] = self.devolver_tipo(posicion)  # devolvemos a la casilla que había
-            coste = 15 + 2 * (x + 1)  # coste = 10 + nº de filas
-
-        return contenedor, coste, new_mapa, new_asignados  # devuelve el coste de descargar
+            self.state.contenedores[posicion] = [None, None, self.state.puerto_del_barco]  # desasigna su posición
+            self.state.asignados.pop(id)  # borra el elemento de la lista de asignados
+            self.state.mapa[x][y] = self.devolver_tipo(posicion)  # devolvemos a la casilla que había
+            self.g += 15 + 2 * (x + 1)  # coste = 10 + nº de filas
 
     def generateCoordinates(self):
         """método auxiliar que genera dos coordenadas aleatorias válidas"""
@@ -212,13 +197,12 @@ class Node:
     def comprobar_no_asignado(self, x, y):
         """metodo auxiliar para comprobar que la posición no está asignada"""
         valores = list(self.state.asignados.values())
-        print("Valores en la comprobación: ", valores)
         return (x, y) not in valores and mapa[x][y] != "X" and (
                     (x < max_prof - 1 and (mapa[x + 1][y] == "X" or (x + 1, y) in valores)) or (x == max_prof - 1))
 
     def comprobar_asignado(self, x, y):
         """metodo auxiliar para comprobar que la posición está asignada"""
-        valores = list(self.asignados.values())
+        valores = list(self.state.asignados.values())
         return (x, y) in valores and mapa[x][y] != "X" and (
                     (x < max_prof - 1 and (mapa[x + 1][y] == "X" or (x + 1, y) in valores)) or (x == max_prof - 1))
 
@@ -237,15 +221,14 @@ class Node:
         if estado_contenedor != "B" and puerto_destino != self.state.puerto_del_barco:
             return "carga"
 
-        return "navegación"  # esto no es así
-
     def generateNode(self, new_contenedores: list, coste: int, new_asignados: list, new_mapa: list, new_puerto):
         """método auxiliar que genera nodo"""
         new_state = State(new_contenedores, new_puerto, new_mapa)
+        new_state.asignados = new_asignados
+
         new_node = Node(new_state, self)
         new_node.g += coste
-        new_node.asignados = new_asignados
-        self.children.append(new_node)
+        return new_node
 
     def __str__(self):
         var = str(self.state)
@@ -274,29 +257,35 @@ estado_inicial = State(contenedores_iniciales, puerto_inicial, mapa)  # estado i
 nodo_inicial = Node(estado_inicial)
 print(nodo_inicial)
 
+print("Cargamos: ")
+nodo_inicial.cargar(0, 1, 0)
+
+print(nodo_inicial)
+
+print("Descargamos:")
+nodo_inicial.descargar(0)
+
+print(nodo_inicial)
+
+'''
+
 lista = [nodo_inicial]
 
 for i in range(3):
     print("\nExpandimos: ")
 
-    n = lista.pop(0)  # quita el primero
+    n = lista.pop(0) #quita el primero
     n.expandir()
     for child in n.children:
         lista.append(child)
         print(child)
 
-'''
-for i in range(20):
-    n = a_expandir.pop(0)
-    print(n)
-    n.expandir()
-    for i in n.children:
-        a_expandir.append(i)
-        print(i)
 
-'''
 
-'''
+
+
+
+
 lista = [nodo_inicial]
 contador = 1
 while len(lista) > 0:
