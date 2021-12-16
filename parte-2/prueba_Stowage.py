@@ -144,26 +144,31 @@ class Node:
 
         for cont in range(len(self.state.contenedores)):
 
-            for pos in posibles_coordenadas:  # por cada posible combinación
-                x, y = pos[0], pos[1]
+            action = self.checkAction(cont)  # comprueba que hacer: si cargar o descargar
+
+            coste, contenedor, new_mapa, new_asignados = self.generateParams(cont)[1:]
+
+            if action == "descarga":  # hay que descargar
                 new_contenedores = copy.deepcopy(
                     self.state.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
-                coste, contenedor, new_mapa, new_asignados = self.generateParams(cont)[1:]
-
                 new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
                                              self.state.puerto_del_barco)  # generamos un nuevo nodo
-                action = self.checkAction(cont)  # comprueba que hacer: si cargar o descargar
+                new_node.descargar(cont)
+                self.checkDifferent(new_node, new_contenedores, cont)
 
-                if action == "carga":  # hay que cargar
+            if action == "carga":
+
+                for pos in posibles_coordenadas:  # por cada posible combinación
+                    x, y = pos[0], pos[1]
+                    new_contenedores = copy.deepcopy(
+                        self.state.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
+                    coste, contenedor, new_mapa, new_asignados = self.generateParams(cont)[1:]
+
+                    new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
+                                                 self.state.puerto_del_barco)  # generamos un nuevo nodo
                     new_node.cargar(cont, x, y)
 
-                if action == "descarga":  # hay que descargar
-                    new_node.descargar(cont)
-
-                if new_contenedores[cont] != self.state.contenedores[cont] and action:
-                    self.children.append(new_node)  # añade el nodo a los hijos
-                    new_node.path = self.path
-                    new_node.path.append(self)
+                    self.checkDifferent(new_node, new_contenedores, cont)
 
     # métodos que comprueban la acción a realizar
 
@@ -174,8 +179,10 @@ class Node:
         if (puerto_contenedor == "B" and puerto_destino == self.state.puerto_del_barco):
             return "descarga"
 
-        if (puerto_contenedor != "B" and puerto_contenedor < puerto_destino):
+        if (puerto_contenedor != "B" and puerto_contenedor < puerto_destino):  # !=
             return "carga"
+
+        return None
 
     def checkNavigate(self):
         """método para comprobar si tiene que navegar"""
@@ -186,11 +193,16 @@ class Node:
             puerto_destino = int(array_contenedores[c][2])
 
             # queda contenedor por descargar/cargar
-            if (puerto_contenedor in ("B", puerto_destino) and puerto_destino == self.state.puerto_del_barco) or (
-                    puerto_contenedor != "B" and puerto_contenedor < puerto_destino):  # quedan contenedores por descargar
+            if self.checkAction(c):  # quedan contenedores por descargar
                 return False
 
         return True  # tiene que navegar, todos están en el barco
+
+    def checkDifferent(self, new_node, new_contenedores: list, cont: int):
+        if new_contenedores[cont] != self.state.contenedores[cont]:
+            self.children.append(new_node)  # añade el nodo a los hijos
+        # new_node.path = self.path
+        # new_node.path.append(self)
 
     # métodos de carga y descarga
 
@@ -216,7 +228,7 @@ class Node:
             self.state.contenedores[posicion] = [None, None, self.state.puerto_del_barco]  # desasigna su posición
             self.state.asignados.pop(id)  # borra el elemento de la lista de asignados
             self.state.mapa[x][y] = self.devolver_tipo(posicion)  # devolvemos a la casilla que había
-            self.g += 15 + 2 * (x + 1)  # coste = 10 + nº de filas
+            self.g += 15 + 2 * (x + 1)  # coste = 15 + nº de filas
 
     # métodos para generar parámetros y coordenadas
 
