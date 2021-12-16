@@ -1,215 +1,284 @@
-#versión que estamos probando
+# versión que estamos probando
+
+
 from argparse import ArgumentParser
+
+from constraint import *
+import sys
 import random
+import math
 import copy
-import ppaser as parser
+
+# para abrir el fichero y cargar sus argumentos
+
+
+# --------------------------------------------------------
+
+
+parser = ArgumentParser(description='%(prog)s is an Argument Parser demo')
+parser.add_argument('carpeta', help='carpeta principal')
+parser.add_argument('mapa', help='mapa')  # mapa
+parser.add_argument('contenedores', help='contenedores')  # lista de contenedores
+# parser.add_argument('heuristica', help='tipo de heuristica') #heurística utilizada
+args = parser.parse_args()
+
+# rutas
+ruta = str(args.carpeta) + '/'
+ruta_mapa = ruta + str(args.mapa) + ".txt"
+ruta_contenedores = ruta + str(args.contenedores) + ".txt"
+
+
+# heuristica = str(args.heuristica)
+
+
+# --------------------------------------------------------
+# metodos auxiliares
+def devuelveContenedores(contenedores: str):
+    """Método auxiliar, coge str de contenedores y los devuelve en tuplas"""
+    lista_contenedores = contenedores.split('\n')
+    array_contenedores = []
+    for contenedor in lista_contenedores:
+        array_contenedores.append(contenedor.split(' '))
+    return array_contenedores
+
+
+def generateMap(mapa: str):
+    """Método auxiliar que convierte el str del mapa en una matriz"""
+    fila = mapa.split('\n')  # los divide por filas
+    max_prof = len(fila)
+    n_pilas = len(fila[0].split(' '))  # los divide por columnas
+    return calculaMatriz(mapa, n_pilas, max_prof)
+
+
+def calculaMatriz(mapa, n_pilas: int, max_prof: int):
+    """Método auxiliar que coge mapa, filas y columnas y te devuelve una matriz con los datos"""
+
+    mapa, matriz = mapa.split(), []
+    for fila in range(max_prof):
+        matriz.append([])
+        for columna in range(n_pilas):
+            matriz[fila].append(mapa[fila * n_pilas + columna])
+
+    return matriz
+
+
+def drawMap(mapa: list):
+    """Método auxiliar que imprime el mapa"""
+    map = ""
+    for fila in mapa:
+        for columna in fila:
+            map += columna + " "
+        map += "\n"
+
+    return map
+
+
+# --------------------------------------------------------
+
+# mapa
+mapa = open(ruta_mapa).read()
+# contenedores
+contenedores = open(ruta_contenedores).read()
+
+print("Contenedores:")
+array_contenedores = devuelveContenedores(contenedores)
+print(array_contenedores)
+
+# matriz con el mapa
+mapa = generateMap(mapa)
+n_pilas, max_prof = len(mapa[0]), len(mapa)
+
+print("Generamos mapa: ")
+print(drawMap(mapa))
+
+
+# --------------------------------------------------------
+
+
+# estado: [(para todo contenedor, [x,y,puerto_actual_contenedor]), puerto_actual_barco ]
+# si un contenedor está asignado, [posx,posy,puerto_actual]. Si no está asignado a ningún puerto, [None,None, B (barco)]. Si está descargado en un puerto, [None,None, puerto].
+
+# información estática que poseen los estados: array original de contenedores [id,tipo,puerto_destino]
+# información dinámica: posicion x,y de cada contenedor, puerto en el que está cada contenedor (en su defecto, en el barco), mapa de carga, puerto actual del barco
 
 class State:
-	def __init__(self, contenedores: list = [], puerto_actual_del_barco: int = 0, mapa=None):
-		self.contenedores = contenedores
-		self.puerto_del_barco = puerto_actual_del_barco
-		self.mapa = mapa
+    def __init__(self, contenedores: list = [], puerto_actual_del_barco: int = 0, mapa=None):
+        self.contenedores = contenedores
+        self.puerto_del_barco = puerto_actual_del_barco
+        self.mapa = mapa
+        self.asignados = []
+        #self.posibilidades = [] #lista de posibilidades
+
+    def __str__(self):
+        pass
 
 
 class Node:
-	def __init__(self, state, parent=None, g=0, h=0, actions=[]):
-		self.children = [] 			# lista de nodos hijos
-		self.parent = parent 		# si tiene nodo padre o no
-		self.g = g					# funcion de costes de operadores aplicados
-		self.h = h					# funcion de evaluacion heuristica
-		self.f = self.g + self.h 				# distancia del nodo al nodo inicial (ver si se puede usar)
-		self.state = state			# estado que recibe por parametro
-		self.actions = actions		# lista de acciones ejecutadas en los nodos anteriores
+    def __init__(self, contenedores,puerto,parent,mapa, g = 0, h = 0):
+        self.children = []  # lista de nodos hijos
+        self.parent = parent  # si tiene nodo padre o no
+        self.g = g  # funcion de costes de operadores aplicados
+        self.h = h  # funcion de evaluacion heuristica
+        self.f = self.g + self.h  # distancia del nodo al nodo inicial (ver si se puede usar)
+        self.contenedores = contenedores
 
-	def __str__(self):
-		var = str(self.content)+"Coste: "+str(self.g)
-		var += "\n"+str(parser.drawMap(self.mapa))+"\n"
-		return var
+        self.puerto = puerto
+        self.content = [self.contenedores,self.puerto
+        #self.actions = actions  # lista de acciones ejecutadas en los nodos anteriores
 
+    def expandir(self):
+        """método para expandir un nodo"""
 
-class AStar:
-	def __init__(self, initial_state, final_state):
-		# Aqui tenemos que inicializar los nodos del estado inicial y del estado final
-		self.initial_state_node = initial_state #Node(initial_state)
-		self.final_state_node = final_state		#Node(final_state)
-# -------------------------------------- Funciones auxiliares del algoritmo A* -----------------------------------
+        # crear todas las posibilidades válidas y añadirlas
+        for cont in range(len(self.contenedores)):
+            new_contenedores = copy.deepcopy(
+                self.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
 
-	def get_solution(self):
-		# Aqui va el codigo del algortimo A*
+            carga = self.checkAction(self.asignados, self.contenedores)  # comprueba que hacer: si cargar o descargar
 
+            if carga:  # si se puede cargar, cargamos el contenedor y creamos nuevo nodo
+                # carga
+                print("Cargando: ")
+                contenedor, coste, new_mapa, new_asignados = self.cargar(cont)  # carga el contenedor
 
-		pass
+            else:  # hay que descargar (o navegar)
+                print("Descargando: ")
+                contenedor, coste, new_mapa, new_asignados = self.descargar(cont)  # carga el contenedor
 
-	def expand(self, node):
-		"""método para expandir un nodo"""
-		# primero hay que ver que operadores se pueden aplicar al nodo recibido
-		# Una vez sabemos que operacion se tiene que hacer hay que crear tantos nuevos nodos como veces la operacin
-		# pueda ser aplicada (como podemos saber cuantas veces puede ser aplicada la operacion?)
-		parent_node = node
-		#Creamos el nuevo nodo
-		new_node = Node(parent_node.state, parent_node)
+            # generación de nuevo nodo
+            if contenedor != self.contenedores[cont]:
+                new_contenedores[cont] = contenedor  # actualiza lista
+                self.generateNode(new_contenedores, coste, new_asignados, new_mapa)
 
+    def cargar(self, posicion: int):
+        """Busca por posición y lo carga"""
+        id, coste, contenedor, new_mapa, new_asignados = self.generateParams(
+            posicion)  # cogemos los parámetros que vamos a usar
+        x, y = self.generateCoordinates()  # generamos posiciones válidas
 
-		#crear todas las posibilidades válidas y añadirlas
-		for cont in range(len(self.contenedores)):
-			new_contenedores = copy.deepcopy(self.contenedores) #creamos nueva lista de contenedores para el nuevo estado
+        if self.contenedores[posicion][2] != "B":
+            contenedor = [x, y, "B"]
+            new_mapa[x][y] = str(id)  # guardamos el id en la celda
+            new_asignados[id] = (x, y)
+            coste = 10 + (x + 1)  # coste = 10 + nº de filas
 
-			carga = self.checkAction(self.asignados,self.contenedores) #comprueba que hacer: si cargar o descargar
+        return contenedor, coste, new_mapa, new_asignados  # devuelve contenedor y el coste asociado
 
-			if carga:#si se puede cargar, cargamos el contenedor y creamos nuevo nodo
-				#carga
-				contenedor,coste,new_mapa,new_asignados = self.cargar(cont,self.mapa) #carga el contenedor
+    def descargar(self, posicion: int):
+        """método que coge contenedor y lo descarga de la lista de contenedores"""
+        id, coste, contenedor, new_mapa, new_asignados = self.generateParams(
+            posicion)  # cogemos los parámetros que vamos a usar
+        x, y = contenedor[0], contenedor[1]  # obtenemos las posiciones del contenedore
 
-				if contenedor != self.contenedores[cont]:
-					new_contenedores[cont] = contenedor#actualiza lista
-					new_node = self.generateNode(new_contenedores,coste,new_asignados,new_mapa)
-					self.children.append(new_node)
+        if self.comprobar_valido(x, y):
+            contenedor = [None, None, self.puerto]  # desasigna su posición
+            new_asignados.pop(id)  # borra el elemento de la lista de asignados
+            new_mapa[x][y] = self.devolver_tipo(posicion)  # devolvemos a la casilla que había
+            coste = 15 + 2 * (x + 1)  # coste = 10 + nº de filas
 
-# -------------------------------------- Operadores --------------------------------------------------------------
-	'''def cargar(self, posicion: int, mapa: list):
-		"""Busca por posición y lo carga"""
+        return contenedor, coste, new_mapa, new_asignados  # devuelve el coste de descargar
 
+    def generateCoordinates(self):
+        """método auxiliar que genera dos coordenadas aleatorias válidas"""
+        x, y = -1, -1
+        while not self.comprobar_valido(x, y):
+            x, y = random.randint(0, len(self.mapa) - 1), random.randint(0, len(
+                self.mapa[0]) - 1)  # hay que comprobar cada posición válida en vez de ser aleatorio
+        return x, y
 
-		id,coste,x,y = array_contenedores[posicion][0],0,-1,-1
-		contenedor,new_mapa,new_asignados = copy.deepcopy(self.contenedores[posicion]),copy.deepcopy(mapa),copy.deepcopy(self.asignados)
-		
-		while not self.comprobar_valido(x,y):
-			x,y = random.randint(0,len(new_mapa)-1),random.randint(0,len(new_mapa[0])-1)
+    def generateCopies(self, posicion):
+        """método auxiliar usado en cargar y descargar para generar deepcopies"""
+        return copy.deepcopy(self.contenedores[posicion]), copy.deepcopy(self.mapa), copy.deepcopy(self.asignados)
 
-		
-		if self.contenedores[posicion][2] != "B":
-			contenedor[0], contenedor[1],contenedor[2]= x,y,"B"
-			new_mapa[x][y] = str(id) #guardamos el id en la celda
-			new_asignados[id] = (contenedor[0],contenedor[1])
-			coste = 10 + (x+1) #coste = 10 + nº de filas 
-		
-		return contenedor,coste,new_mapa,new_asignados #devuelve contenedor y el coste asociado'''
+    def generateParams(self, posicion):
+        """método auxiliar que genera variables en los métodos de carga y descarga"""
+        id = array_contenedores[posicion][0]  # cogemos el id del contenedor
+        coste = 0  # por defecto
+        contenedor, new_mapa, new_asignados = self.generateCopies(posicion)  # generamos las copias para el nuevo nodo
 
-	def descargar(self, posicion:int):
-		"""método que coge contenedor y lo descarga de la lista de contenedores"""
-		#Esto se podria hacer creando el node con los atributos de los contenedores
+        return id, coste, contenedor, new_mapa, new_asignados
 
-		contenedor = copy.deepcopy(self.contenedores[posicion])
-		new_mapa = copy.deepcopy(mapa) #hace una copia
-		new_asignados = copy.deepcopy(self.asignados) #copia de asignados
+    def navegar(self):
+        """operador para navegar. Se tienen que comprobar las condiciones para que navegue"""
 
+        # faltaría hacer la comprobación de que se puede navegar
+        new_contenedores = copy.deepcopy(self.contenedores)
+        new_node = Node(new_contenedores, self.puerto + 1, self.parent, self.start, self.goal, self.mapa)
+        self.children.append(new_node)
+        return 3500  # coste de navegar
 
-		x,y = contenedor[posicion][0],contenedor[posicion][1] #posiciones previamente guardadas
-		contenedor[posicion][0],contenedor[posicion][1],contenedor[posicion][2] = None,None, self.puerto#desasigna su posición
-		new_mapa[x][y] = self.devolver_tipo(self.contenedores[posicion]) #devolvemos a la casilla que había
-		coste = 15 + 2*(x+1) #coste = 10 + nº de filas 
-		return coste #devuelve el coste de descargar
+    # métodos auxiliares
 
-	def navegar(self):
-		"""operador para navegar. Se tienen que comprobar las condiciones para que navegue"""
+    def comprobar_valido(self, x, y):
+        """metodo auxiliar para comprobar que la posición es válida"""
+        valores = list(self.asignados.values())
+        return (x, y) not in valores and mapa[x][y] != "X" and (
+                    (x < max_prof - 1 and (mapa[x + 1][y] == "X" or (x + 1, y) in valores)) or (x == max_prof - 1))
 
-		#faltaría hacer la comprobación de que se puede navegar
-		new_contenedores = copy.deepcopy(self.contenedores)
-		new_node = Node(new_contenedores,self.puerto+1,self.parent,self.start,self.goal,self.mapa)
-		self.children.append(new_node)
-		return 3500 #coste de navegar
+    def devolver_tipo(self, posicion: int):
+        """método auxiliar para devolver el tipo de celda que tiene que retornar al mapa según el tipo de contenedor"""
+        correspondencias = {'S': 'N', 'R': 'E'}
+        return str((correspondencias[array_contenedores[posicion][1]]))
 
-# -------------------------------------- Funciones auxiliares de los operadores -----------------------------------
-	'''def comprobar_valido(self, x, y):
-		"""metodo auxiliar para comprobar que la posición es válida"""
-		valores = list(self.asignados.values())
-		return (x,y) not in valores and mapa[x][y] != "X" and ( (x < max_prof-1 and (mapa[x+1][y] == "X" or (x+1,y) in valores)) or (x == max_prof-1))'''
+    def checkAction(self, contenedores: list, asignados: list):
+        # caso 1: tiene que descargar
+        self.puerto
+        # caso 2: tiene que cargar
 
-	'''def devolver_tipo(self, contenedor: list):
-		"""método auxiliar para devolver el tipo de celda que tiene que retornar al mapa según el tipo de contenedor"""
-		pos = -1
+        # caso 3: tiene que navegar
+        return len(self.asignados) < len(self.contenedores)
 
-		for cont in range(len(array_contenedores)):
-			if array_contenedores[cont][0] == contenedor[2]: #busca la coincidencia por el id
-				pos = cont
+    def generateNode(self, new_contenedores: list, coste: int, new_asignados: list, new_mapa: list):
+        """método auxiliar que genera nodo"""
 
-		correspondencias = {'S':'N','R':'E'}
+        new_node = Node(new_contenedores, self.puerto, self.parent, new_mapa)
+        new_node.g += coste
+        new_node.asignados = new_asignados
+        self.children.append(new_node)
 
-		return str((correspondencias[array_contenedores[pos][1]]))'''
+    def __str__(self):
 
-	def checkAction(self, contenedores: list, asignados: list):
-		# Hay una gerarquia de verificar las acciones
-		# Primero verificamos la descarga
-		# Segundo verficamos la carga
-		# Tercero verficamos la navegacion
-		return len(self.asignados) < len(self.contenedores)
-
-	def generateNode(self,new_contenedores: list, coste: int, new_asignados: list, new_mapa: list):
-		"""método auxiliar que genera nodo"""
-
-		new_node = Node(new_contenedores, self.puerto, self.parent, new_mapa)
-		new_node.g += coste
-		new_node.asignados = new_asignados
-		return new_node
+        var = str(self.content) + "Coste: " + str(self.g)
+        var += "\n" + str(drawMap(self.mapa)) + "\n"
+        return var
 
 
-# -------------------------------------- Main del programa -----------------------------------
-
-# Aqui tenemos que tener toda la data parseada de los ficheros y jugar con
-# ella para crear los estados iniciales y finales
+# --------------------------------------------------------
 
 
-def get_initial_state():
-	# Le pasamos al constructor State la lista de contenedores correspondiente del estado inicial, el puerto actual y el
-	# contendores = [[None, None, 0]] * numero_de_contenedores
-	# Por cuestiones de claridad capaz seria bueno tener un array estatico que se corresponda con el array contenedores
-	initial_state = State()
-	return initial_state
-
-
-def get_final_state():
-	final_state = State()
-	return final_state
-
-
-contenedores = parser.devuelveContenedores()
-mapa = parser.generateMap()
-print(contenedores)
-print(mapa)
-initial_state = get_initial_state()
-final_state = get_final_state()
-
-#AStar(initial_state, final_state)
-#AStar.get_solution()
-
-"""
-#obtenemos el puerto final
+# obtenemos el puerto final
 puerto_final = 0
 for cont in array_contenedores:
-	if int(cont[2]) > puerto_final:
-		puerto_final = int(cont[2])
-
+    if int(cont[2]) > puerto_final:
+        puerto_final = int(cont[2])
 
 print("-------------------------------------------------------")
 
-
 contenedores_iniciales = []
 for cont in array_contenedores:
-	contenedores_iniciales.append([None,None,0])#guardamos las posiciones inicializadas a None y el puerto inicial (0)
+    contenedores_iniciales.append(
+        [None, None, 0])  # guardamos las posiciones inicializadas a None y el puerto inicial (0)
 
-
-#--------------------------------------------------------
+# --------------------------------------------------------
 
 puerto_inicial = 0
-nodo_inicial = Node(contenedores_iniciales,puerto_inicial,None,mapa)
+nodo_inicial = Node(contenedores_iniciales, puerto_inicial, None, mapa)
 
-
-lista = [nodo_inicial] 
+lista = [nodo_inicial]
 contador = 1
 while len(lista) > 0:
-	print("Iteracion: ",contador)
-	n = lista.pop(0) #coge el primero de la lista
-	n.expandir() #lo expande
+    print("Iteracion: ", contador)
+    n = lista.pop(0)  # coge el primero de la lista
+    n.expandir()  # lo expande
 
-	for child in n.children:
+    for child in n.children:
+        print(child)
+        lista.append(child)
 
-		print(child)
-		lista.append(child)
+    contador += 1
 
-	contador += 1
-
-	print("\n")
+    print("\n")
 
 
-"""
+
 
