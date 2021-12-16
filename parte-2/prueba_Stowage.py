@@ -149,6 +149,7 @@ class Node:
             coste, contenedor, new_mapa, new_asignados = self.generateParams(cont)[1:]
 
             if action == "descarga":  # hay que descargar
+                # checkear si tiene contenedores desordenados
                 new_contenedores = copy.deepcopy(
                     self.state.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
                 new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
@@ -204,6 +205,8 @@ class Node:
         # new_node.path = self.path
         # new_node.path.append(self)
 
+    # def checkReordenate(self,x:int,y:int):
+    #	if self.state.mapa[x][y]
     # métodos de carga y descarga
 
     def cargar(self, posicion: int, x: int, y: int):
@@ -223,8 +226,13 @@ class Node:
         id, coste, contenedor, new_mapa, new_asignados = self.generateParams(
             posicion)  # cogemos los parámetros que vamos a usar
         x, y = contenedor[0], contenedor[1]  # obtenemos las posiciones del contenedore
+        print(self.state.asignados)
+
+        # comprobar si tiene que reordenar
 
         if self.comprobar_asignado(x, y):
+            # coste = self.checkReordenate(x,y)
+
             self.state.contenedores[posicion] = [None, None, self.state.puerto_del_barco]  # desasigna su posición
             self.state.asignados.pop(id)  # borra el elemento de la lista de asignados
             self.state.mapa[x][y] = self.devolver_tipo(posicion)  # devolvemos a la casilla que había
@@ -264,9 +272,10 @@ class Node:
     def comprobar_asignado(self, x, y):
         """metodo auxiliar para comprobar que la posición está asignada"""
         valores = list(self.state.asignados.values())
-        return (x, y) in valores and mapa[x][y] != "X" and (
-                    (x < max_prof - 1 and ((mapa[x + 1][y] == "X") or (x + 1, y) in valores)) or (
-                        x == max_prof - 1 and (x - 1, y) not in valores))
+
+        return ((x, y) in valores and mapa[x][y] != "X" and (
+        (x < max_prof - 1 and (mapa[x + 1][y] == "X" or (x + 1, y) in valores) and (x - 1, y) not in valores)) or (
+                            x == max_prof - 1))  # esta comprobación no funciona
 
     def devolver_tipo(self, posicion: int):
         """método auxiliar para devolver el tipo de celda que tiene que retornar al mapa según el tipo de contenedor"""
@@ -349,6 +358,8 @@ print(nodo_inicial)
 
 print("Nodo final: ", nodo_final)
 
+print("-----------------------------------------------")
+
 lista = [nodo_inicial]
 n = Node(estado_inicial)
 
@@ -370,6 +381,8 @@ while not exito and len(lista) > 0:
             t_final = time.time()
 
         print(child)
+
+    print("-----------------------------------------------")
 
 if exito:
     print("Has alcanzado el nodo final!!!!!")
