@@ -155,11 +155,11 @@ class Node:
 			if carga:#si se puede cargar, cargamos el contenedor y creamos nuevo nodo
 				#carga
 				print("Cargando: ")
-				contenedor,coste,new_mapa,new_asignados = self.cargar(cont,self.mapa) #carga el contenedor
+				contenedor,coste,new_mapa,new_asignados = self.cargar(cont) #carga el contenedor
 
 			else: #hay que descargar (o navegar)
 				print("Descargando: ")
-				contenedor,coste,new_mapa,new_asignados = self.descargar(cont,self.mapa) #carga el contenedor
+				contenedor,coste,new_mapa,new_asignados = self.descargar(cont) #carga el contenedor
 
 
 			if contenedor != self.contenedores[cont]:
@@ -170,16 +170,10 @@ class Node:
 
 	
 
-	def cargar(self,posicion:int,mapa:list):
+	def cargar(self,posicion:int):
 		"""Busca por posición y lo carga"""
-
-
-		id,coste,x,y = array_contenedores[posicion][0],0,-1,-1
-
-		contenedor,new_mapa,new_asignados = copy.deepcopy(self.contenedores[posicion]),copy.deepcopy(mapa),copy.deepcopy(self.asignados)
-		
-		while not self.comprobar_valido(x,y):
-			x,y = random.randint(0,len(new_mapa)-1),random.randint(0,len(new_mapa[0])-1)#hay que comprobar cada posición válida en vez de ser aleatorio
+		id,coste,contenedor,new_mapa,new_asignados = self.generateParams(posicion)
+		x,y = self.generateCoordinates() #generamos posiciones válidas
 
 		
 		if self.contenedores[posicion][2] != "B":
@@ -191,30 +185,51 @@ class Node:
 		return contenedor,coste,new_mapa,new_asignados #devuelve contenedor y el coste asociado
 
 
-	def descargar(self,posicion:int,mapa:list):
+	def descargar(self,posicion:int):
 		"""método que coge contenedor y lo descarga de la lista de contenedores"""
-		contenedor, new_mapa, new_asignados = copy.deepcopy(self.contenedores[posicion]), copy.deepcopy(mapa), copy.deepcopy(self.asignados)
-		x,y = contenedor[0],contenedor[1] #posiciones previamente guardadas
-		id = array_contenedores[posicion][0]
+		id,coste,contenedor,new_mapa,new_asignados = self.generateParams(posicion)
+		x,y = contenedor[0],contenedor[1]
 
-		contenedor = [None,None,self.puerto]#desasigna su posición
-		new_asignados.pop(id) #borra el elemento de la lista de asignados
-		new_mapa[x][y] = self.devolver_tipo(self.contenedores[posicion]) #devolvemos a la casilla que había
-		coste = 15 + 2*(x+1) #coste = 10 + nº de filas
+
+		if self.comprobar_valido(x,y):
+			contenedor = [None,None,self.puerto]#desasigna su posición
+			new_asignados.pop(id) #borra el elemento de la lista de asignados
+			new_mapa[x][y] = self.devolver_tipo(self.contenedores[posicion]) #devolvemos a la casilla que había
+			coste = 15 + 2*(x+1) #coste = 10 + nº de filas
+
 		return contenedor,coste,new_mapa,new_asignados #devuelve el coste de descargar
 
 
+	def generateCoordinates(self):
+		"""método auxiliar que genera dos coordenadas aleatorias válidas"""
+		x,y = -1,-1
+		while not self.comprobar_valido(x,y):
+			x,y = random.randint(0,len(self.mapa)-1),random.randint(0,len(self.mapa[0])-1)#hay que comprobar cada posición válida en vez de ser aleatorio
+		return x,y
+
+	def generateCopies(self,posicion):
+		"""método auxiliar usado en cargar y descargar para generar deepcopies"""
+		return copy.deepcopy(self.contenedores[posicion]), copy.deepcopy(self.mapa), copy.deepcopy(self.asignados)
+
+	def generateParams(self,posicion):
+		"""método auxiliar que genera variables en los métodos de carga y descarga"""
+		id = array_contenedores[posicion][0] #cogemos el id del contenedor
+		coste = 0  # por defecto
+		contenedor, new_mapa, new_asignados = self.generateCopies(posicion)  # generamos las copias para el nuevo nodo
+
+		return id,coste,contenedor,new_mapa,new_asignados
+
 
 	def navegar(self):
-		"""operador para navegar. Se tienen que comprobar las condiciones para que navegue"""
+			"""operador para navegar. Se tienen que comprobar las condiciones para que navegue"""
 
-		#faltaría hacer la comprobación de que se puede navegar
-		new_contenedores = copy.deepcopy(self.contenedores)
-		new_node = Node(new_contenedores,self.puerto+1,self.parent,self.start,self.goal,self.mapa)
-		self.children.append(new_node)
-		return 3500 #coste de navegar
-		
-	#métodos auxiliares
+			#faltaría hacer la comprobación de que se puede navegar
+			new_contenedores = copy.deepcopy(self.contenedores)
+			new_node = Node(new_contenedores,self.puerto+1,self.parent,self.start,self.goal,self.mapa)
+			self.children.append(new_node)
+			return 3500 #coste de navegar
+
+		#métodos auxiliares
 
 
 	def comprobar_valido(self,x,y):
@@ -286,7 +301,7 @@ nodo_inicial = Node(contenedores_iniciales,puerto_inicial,None,mapa)
 
 lista = [nodo_inicial] 
 contador = 1
-for i in range(20):
+while len(lista) > 0:
 	print("Iteracion: ",contador)
 	n = lista.pop(0) #coge el primero de la lista
 	n.expandir() #lo expande
