@@ -162,17 +162,17 @@ class Node:
 				contenedor,coste,new_mapa,new_asignados = self.descargar(cont) #carga el contenedor
 
 
+			#generación de nuevo nodo
 			if contenedor != self.contenedores[cont]:
 				new_contenedores[cont] = contenedor  # actualiza lista
-				new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa)
-				self.children.append(new_node)
-			
+				self.generateNode(new_contenedores, coste, new_asignados, new_mapa)
+
 
 	
 
 	def cargar(self,posicion:int):
 		"""Busca por posición y lo carga"""
-		id,coste,contenedor,new_mapa,new_asignados = self.generateParams(posicion)
+		id,coste,contenedor,new_mapa,new_asignados = self.generateParams(posicion) #cogemos los parámetros que vamos a usar
 		x,y = self.generateCoordinates() #generamos posiciones válidas
 
 		
@@ -187,8 +187,8 @@ class Node:
 
 	def descargar(self,posicion:int):
 		"""método que coge contenedor y lo descarga de la lista de contenedores"""
-		id,coste,contenedor,new_mapa,new_asignados = self.generateParams(posicion)
-		x,y = contenedor[0],contenedor[1]
+		id,coste,contenedor,new_mapa,new_asignados = self.generateParams(posicion) #cogemos los parámetros que vamos a usar
+		x,y = contenedor[0],contenedor[1] #obtenemos las posiciones del contenedore
 
 
 		if self.comprobar_valido(x,y):
@@ -262,7 +262,7 @@ class Node:
 		new_node = Node(new_contenedores,self.puerto,self.parent,new_mapa)
 		new_node.g += coste
 		new_node.asignados = new_asignados
-		return new_node
+		self.children.append(new_node)
 
 
 	def __str__(self):
