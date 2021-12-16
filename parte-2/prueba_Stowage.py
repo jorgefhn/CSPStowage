@@ -8,6 +8,7 @@ import sys
 import random
 import math
 import copy
+import time
 
 # para abrir el fichero y cargar sus argumentos
 
@@ -19,7 +20,7 @@ parser = ArgumentParser(description='%(prog)s is an Argument Parser demo')
 parser.add_argument('carpeta', help='carpeta principal')
 parser.add_argument('mapa', help='mapa')  # mapa
 parser.add_argument('contenedores', help='contenedores')  # lista de contenedores
-# parser.add_argument('heuristica', help='tipo de heuristica') #heurística utilizada
+parser.add_argument('heuristica', help='tipo de heuristica')  # heurística utilizada
 args = parser.parse_args()
 
 # rutas
@@ -128,6 +129,7 @@ class Node:
         self.f = self.g + self.h  # distancia del nodo al nodo inicial (ver si se puede usar)
         self.actions = actions
         self.state = state
+        self.path = []
 
     def expandir(self):
 
@@ -138,6 +140,7 @@ class Node:
             new_node = self.generateNode(self.state.contenedores, self.g + 3500, self.state.asignados, self.state.mapa,
                                          self.state.puerto_del_barco + 1)  # generamos nuevo nodo
             self.children.append(new_node)  # añade a children
+            print("Camino: ", self.path)
 
         for cont in range(len(self.state.contenedores)):
 
@@ -159,6 +162,8 @@ class Node:
 
                 if new_contenedores[cont] != self.state.contenedores[cont] and action:
                     self.children.append(new_node)  # añade el nodo a los hijos
+                    new_node.path = self.path
+                    new_node.path.append(self)
 
     # métodos que comprueban la acción a realizar
 
@@ -335,7 +340,10 @@ print("Nodo final: ", nodo_final)
 lista = [nodo_inicial]
 n = Node(estado_inicial)
 
+final = ""
+
 exito = False
+t_inicio = time.time()
 while not exito and len(lista) > 0:
 
     n = lista.pop(0)  # quita el primero
@@ -347,12 +355,15 @@ while not exito and len(lista) > 0:
             print("Aquí: ", child)
             final = child
             exito = True
+            t_final = time.time()
 
         print(child)
 
 if exito:
     print("Has alcanzado el nodo final!!!!!")
-
+    print(len(final.path))
+    for node in final.path:
+        print(node.state.contenedores)
 else:
     print("Fracaso")
 
@@ -373,5 +384,12 @@ while len(lista) > 0:
 	print("\n")
 '''
 
+# --------------------------------------------------------
+# sacar el resultado por un fichero
+file = open(args.mapa + "-" + args.contenedores + "-" + args.heuristica + ".output", "w")
+file.write("Tiempo total: " + str(t_final - t_inicio))
+file.write("\nCoste total: " + str(final.g))
+file.write("\nLongitud del plan: ")
+file.write("\nNodos expandidos: ")
 
-
+file.close()
