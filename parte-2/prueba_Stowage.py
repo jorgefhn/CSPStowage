@@ -107,7 +107,8 @@ class State:
         self.puerto_del_barco = puerto_actual_del_barco
         self.mapa = mapa
         self.asignados = {}
-        # self.posibilidades = [] #lista de posibilidades
+
+    # self.posibilidades = [] #lista de posibilidades
 
     def __str__(self):
         var = str(self.contenedores) + "\n"
@@ -118,6 +119,7 @@ class State:
 
 
 class Node:
+
     def __init__(self, state, parent=None, g=0, h=0, actions=[]):
         self.children = []  # lista de nodos hijos
         self.parent = parent  # si tiene nodo padre o no
@@ -128,7 +130,6 @@ class Node:
         self.state = state
 
     def expandir(self):
-        """método para expandir un nodo"""
 
         # crear todas las posibilidades válidas y añadirlas
         posibles_coordenadas = self.generateCoordinates()  # genera las posibles coordenadas
@@ -139,6 +140,7 @@ class Node:
             self.children.append(new_node)  # añade a children
 
         for cont in range(len(self.state.contenedores)):
+
             for pos in posibles_coordenadas:  # por cada posible combinación
                 x, y = pos[0], pos[1]
                 new_contenedores = copy.deepcopy(
@@ -158,7 +160,7 @@ class Node:
                 if new_contenedores[cont] != self.state.contenedores[cont] and action:
                     self.children.append(new_node)  # añade el nodo a los hijos
 
-        # después de comprobar si puede cargar y descargar cada contenedor, comprueba si puede navegar
+    # métodos que comprueban la acción a realizar
 
     def checkAction(self, cont: int):
         puerto_contenedor = self.state.contenedores[cont][2]
@@ -185,11 +187,15 @@ class Node:
 
         return True  # tiene que navegar, todos están en el barco
 
+    # métodos de carga y descarga
+
     def cargar(self, posicion: int, x: int, y: int):
         """Busca por posición y lo carga"""
         id = array_contenedores[posicion][0]  # cogemos el id del contenedor
 
-        if self.state.contenedores[posicion][2] != "B" and self.comprobar_no_asignado(x, y):
+        if self.state.contenedores[posicion][2] != "B" and self.comprobar_no_asignado(x,
+                                                                                      y) and self.contenedor_compatible(
+                posicion, x, y):
             self.state.contenedores[posicion] = [x, y, "B"]
             self.state.mapa[x][y] = str(id)  # guardamos el id en la celda
             self.state.asignados[id] = (x, y)
@@ -206,6 +212,8 @@ class Node:
             self.state.asignados.pop(id)  # borra el elemento de la lista de asignados
             self.state.mapa[x][y] = self.devolver_tipo(posicion)  # devolvemos a la casilla que había
             self.g += 15 + 2 * (x + 1)  # coste = 10 + nº de filas
+
+    # métodos para generar parámetros y coordenadas
 
     def generateCoordinates(self):
         """método auxiliar que genera dos coordenadas aleatorias válidas"""
@@ -228,6 +236,8 @@ class Node:
 
         return id, coste, contenedor, new_mapa, new_asignados
 
+    # métodos auxiliares para comprobar las posiciones de los contenedores
+
     def comprobar_no_asignado(self, x, y):
         """metodo auxiliar para comprobar que la posición no está asignada"""
         valores = list(self.state.asignados.values())
@@ -237,7 +247,6 @@ class Node:
     def comprobar_asignado(self, x, y):
         """metodo auxiliar para comprobar que la posición está asignada"""
         valores = list(self.state.asignados.values())
-
         return (x, y) in valores and mapa[x][y] != "X" and (
                     (x < max_prof - 1 and ((mapa[x + 1][y] == "X") or (x + 1, y) in valores)) or (
                         x == max_prof - 1 and (x - 1, y) not in valores))
@@ -246,6 +255,17 @@ class Node:
         """método auxiliar para devolver el tipo de celda que tiene que retornar al mapa según el tipo de contenedor"""
         correspondencias = {'S': 'N', 'R': 'E'}
         return str((correspondencias[array_contenedores[posicion][1]]))
+
+    def contenedor_compatible(self, posicion, x, y):
+        contenedor = array_contenedores[posicion]
+
+        if (contenedor[1] == "R" and self.state.mapa[x][y] == "E") or (
+                contenedor[1] == "S" and self.state.mapa[x][y] in ("E", "N")):
+            return True
+
+        return False
+
+    # metodo que crea nodos
 
     def generateNode(self, new_contenedores: list, coste: int, new_asignados: list, new_mapa: list, new_puerto):
         """método auxiliar que genera nodo"""
@@ -256,8 +276,9 @@ class Node:
         new_node.g += coste
         return new_node
 
+    # métodos propios del nodo
     def __str__(self):
-        var = str(self.state)
+        var = str(self.state) + "\nCoste: " + str(self.g) + "\n"
         return var
 
     def __eq__(self, other):
@@ -309,10 +330,13 @@ nodo_inicial.descargar(1)
 print(nodo_inicial)
 '''
 
+print("Nodo final: ", nodo_final)
+
 lista = [nodo_inicial]
 n = Node(estado_inicial)
 
-while n != nodo_final and len(lista) > 0:
+exito = False
+while not exito and len(lista) > 0:
 
     n = lista.pop(0)  # quita el primero
     n.expandir()
@@ -320,28 +344,33 @@ while n != nodo_final and len(lista) > 0:
         lista.append(child)
 
         if child == nodo_final:
-            break
+            print("Aquí: ", child)
+            final = child
+            exito = True
 
         print(child)
 
-print(lista[-1])  # nodo final
-print("Has alcanzado el nodo final!!!!!")
+if exito:
+    print("Has alcanzado el nodo final!!!!!")
+
+else:
+    print("Fracaso")
 
 '''
 lista = [nodo_inicial]
 contador = 1
 while len(lista) > 0:
-    print("Iteracion: ", contador)
-    n = lista.pop(0)  # coge el primero de la lista
-    n.expandir()  # lo expande
+	print("Iteracion: ", contador)
+	n = lista.pop(0)  # coge el primero de la lista
+	n.expandir()  # lo expande
 
-    for child in n.children:
-        print(child)
-        lista.append(child)
+	for child in n.children:
+		print(child)
+		lista.append(child)
 
-    contador += 1
+	contador += 1
 
-    print("\n")
+	print("\n")
 '''
 
 
