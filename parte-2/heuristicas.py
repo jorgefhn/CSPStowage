@@ -1,44 +1,57 @@
+mat = [ [2,2,1,1],
+        [2,1,2,1],
+        [1,2,1,2],
+        [1,1,2,2]
+      ]
+
+mat2= [ [2],
+        [2],
+        [1],
+        [1]
+      ]
+
+#print("Esta es la cantidad de fila: ", len(mat2))
+#print("Esta es la cantidad de comlunas: ", len(mat2[0]))
+
 def find_deepest_container(mat, num):
-  filas = len(mat) 
-  columnas = len(mat[0])
-  last_row = filas-1
+  filas,columnas = len(mat),len(mat[0])
   deepest_one = [None] * columnas
 
-  for fila in range(len(mat)):
-    for columna in range(len(mat[0])):
+  for fila in range(filas):
+    for columna in range(columnas):
       elem = mat[filas-1-fila][columnas-1-columna]
 
-      if elem == num and deepest_one[columnas-1-columna] is None:
+      if elem == num and deepest_one[columnas-1-columna] is None: #ha encontrado el más profundo
         deepest_one[columnas-1-columna] = [filas-1-fila, columnas-1-columna]
-      #print(str(mat[column][last_row]))
-    #print()
 
-  #print(deepest_one)
   return deepest_one
 
 
 def find_greater_above_containers(mat, num, deepest_cord):
-  num_of_greater_elems = []
-  dic_row_of_greater_elem = {}
+  """busca la cantidad de elementos > num y las posiciones de dichos elementos"""
+
+  num_of_greater_elems, dic_row_of_greater_elem = [],{}
 
   for cord in deepest_cord:
+
     if cord is not None:
-      fila = cord[0]
-      columna = cord[1]
-      dic_row_of_greater_elem[columna] = []
-      cont = 0 
+
+      fila,columna,dic_row_of_greater_elem[columna],cont = cord[0],cord[1],[],0
 
       while fila >= 0:
-        if mat[fila][columna] > num and mat[fila][columna] != 0:
+        if mat[fila][columna] > num and mat[fila][columna] != -1:
           cont +=1
           dic_row_of_greater_elem[columna].append(fila)
+
         fila -=1
+      
       num_of_greater_elems.append(cont)
 
-    print(num_of_greater_elems)
-    print(dic_row_of_greater_elem)
 
     return num_of_greater_elems, dic_row_of_greater_elem
+
+
+
 
 def h1(mat,num):
     #Heuristica 1: multiplicar por los costes sin tomar en cuenta las posiciones, los elementos que estan mal colocados
@@ -51,6 +64,7 @@ def h1(mat,num):
 
     print("Resultado de la heuristica: " + str(acum)) 
     return acum
+
 
 def h2(mat,num):
     #Heuristica 2: multiplicar por los costes tomando en cuenta las posiciones, los elementos que estan mal colocados
@@ -65,6 +79,8 @@ def h2(mat,num):
     print("Resultado de la heuristica: " + str(acum)) 
     return acum
 
+#h2(mat,1)
+
 def h3(mat,num):
     #Heuristica 3: solo tomamos en cuenta los elementos que estan mal colocados
     deepest = find_deepest_container(mat,num)
@@ -77,7 +93,4 @@ def h3(mat,num):
     print("Resultado de la heuristica: " + str(acum)) 
     return acum
 
-def print_params(deepest, num_of_greater, dict_pos_of_grater):
-    print("\n\n\nPosiciones de los unos mas profundos: " + str(deepest))
-    print("Numero de elementos mayores que 1 por columna: " + str(num_of_greater))
-    print("Diccionarios de las posiciones de los numeros mayores: " + str(dict_pos_of_grater))
+#h3(mat,1)
