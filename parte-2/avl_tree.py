@@ -3,6 +3,7 @@
 
 import sys
 
+
 class Node:
     def __init__(self, state, parent=None, g=0, h=0, actions=[]):
         self.children = []  # lista de nodos hijos
@@ -59,6 +60,21 @@ class AVLTree(object):
         return root
 
     # Function to delete a node
+
+    def search_node(self, root, key):
+        """ Busca recursivamente un nodo"""
+
+        if key == root.key:
+            print("Éxito")
+            return True
+
+
+        elif key < root.key:
+            root.left = self.search_node(root.left, key)
+
+        elif key > root.key:
+            root.right = self.search_node(root.right, key)
+
     def delete_node(self, root, key):
 
         # Find the node to be deleted and remove it
@@ -68,6 +84,9 @@ class AVLTree(object):
             root.left = self.delete_node(root.left, key)
         elif key > root.key:
             root.right = self.delete_node(root.right, key)
+
+        # esto se queda igual
+
         else:
             if root.left is None:
                 temp = root.right
@@ -168,30 +187,39 @@ class AVLTree(object):
             self.printHelper(currPtr.right, indent, True)
 
 
-n1 = Node("Hola",None,1)
-n2 = Node(None,None,2)
-n3 = Node(None,None,3)
-n4 = Node(None,None,4)
-n5 = Node(None,None,5)
-n6 = Node(None,None,6)
-n7 = Node(None,None,7)
-n8 = Node(None,None,8)
-n9 = Node(None,None,9)
-n10 = Node(None,None,10)
+n1 = Node("Hola", None, 1)
+n2 = Node(None, None, 2)
+n3 = Node(None, None, 3)
+n4 = Node(None, None, 4)
+n5 = Node(None, None, 5)
+n6 = Node(None, None, 6)
+n7 = Node(None, None, 7)
+n8 = Node(None, None, 8)
+n9 = Node(None, None, 9)
+n10 = Node(None, None, 10)
 n11 = Node(None, None, 3)
 
-
 myTree = AVLTree()
-root = None
+root = 0
 nodes = [n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11]
 for node in nodes:
     root = myTree.insert_node(root, node.f, node)
 myTree.printHelper(root, "", True)
 
-key = 8
-root = myTree.delete_node(root, key)
+# buscamos algo
+k = myTree.search_node(root, 3)
+print("Busqueda. ", k)
+
+keys = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3]
+for key in keys:
+    root = myTree.delete_node(root, key)
+
+print(root is None)
+
 print("After Deletion: ")
 myTree.printHelper(root, "", True)
 
 min_node = myTree.getMinValueNode(root)
-#print(min_node.content.state)
+# print(min_node.content.state)
+#
+
