@@ -3,12 +3,11 @@
 
 from argparse import ArgumentParser
 
-from constraint import *
-import sys
 import random
 import math
 import copy
 import time
+import subprocess
 
 # para abrir el fichero y cargar sus argumentos
 
@@ -129,7 +128,14 @@ class Node:
         self.f = self.g + self.h  # distancia del nodo al nodo inicial (ver si se puede usar)
         self.actions = actions
         self.state = state
-        self.path = []
+
+        if parent:
+            self.path = parent.path
+            self.nodos = parent.nodos
+
+        else:
+            self.path = []
+            self.nodos = 0
 
     def expandir(self):
 
@@ -140,7 +146,6 @@ class Node:
             new_node = self.generateNode(self.state.contenedores, self.g + 3500, self.state.asignados, self.state.mapa,
                                          self.state.puerto_del_barco + 1)  # generamos nuevo nodo
             self.children.append(new_node)  # añade a children
-            print("Camino: ", self.path)
 
         for cont in range(len(self.state.contenedores)):
 
@@ -154,8 +159,14 @@ class Node:
                     self.state.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
                 new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
                                              self.state.puerto_del_barco)  # generamos un nuevo nodo
-                new_node.descargar(cont)
-                self.checkDifferent(new_node, new_contenedores, cont)
+
+                x, y = new_node.state.contenedores[cont][0], new_node.state.contenedores[cont][1]
+                cont_nuevo = new_node.checkReordenate(cont, x, y)
+                x_nuevo, y_nuevo = new_node.state.contenedores[cont_nuevo][0], new_node.state.contenedores[cont_nuevo][
+                    1]
+
+                new_node.descargar(cont_nuevo)
+                self.checkDifferent(new_node, new_contenedores, cont_nuevo)
 
             if action == "carga":
 
@@ -168,7 +179,6 @@ class Node:
                     new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
                                                  self.state.puerto_del_barco)  # generamos un nuevo nodo
                     new_node.cargar(cont, x, y)
-
                     self.checkDifferent(new_node, new_contenedores, cont)
 
     # métodos que comprueban la acción a realizar
@@ -180,7 +190,8 @@ class Node:
         if (puerto_contenedor == "B" and puerto_destino == self.state.puerto_del_barco):
             return "descarga"
 
-        if (puerto_contenedor != "B" and puerto_contenedor < puerto_destino):  # !=
+        if (
+                puerto_contenedor != "B" and puerto_destino > puerto_contenedor and puerto_destino > self.state.puerto_del_barco):  # !=
             return "carga"
 
         return None
@@ -200,14 +211,28 @@ class Node:
         return True  # tiene que navegar, todos están en el barco
 
     def checkDifferent(self, new_node, new_contenedores: list, cont: int):
-        if new_contenedores[cont] != self.state.contenedores[cont]:
+
+        if new_contenedores[cont] != self.state.contenedores[cont] and new_node not in self.path:
             self.children.append(new_node)  # añade el nodo a los hijos
+            # new_node.path = self.path
+            new_node.path.append(self)
+            new_node.nodos += 1  # expande un nodo más
+
         # new_node.path = self.path
         # new_node.path.append(self)
 
-    # def checkReordenate(self,x:int,y:int):
-    #	if self.state.mapa[x][y]
-    # métodos de carga y descarga
+    def checkReordenate(self, posicion: int, x: int, y: int):
+
+        for fila in range(0, x):  # itera sobre toda la pila
+
+            if self.state.mapa[fila][y] not in ("N", "E", "X"):  # es una posición asignada
+
+                pos_comparar = self.state.contenedores.index(
+                    [fila, y, "B"])  # buscamos la posición en el array de cotnenedores
+
+                return pos_comparar
+
+        return posicion  # no tiene que reordenar
 
     def cargar(self, posicion: int, x: int, y: int):
         """Busca por posición y lo carga"""
@@ -226,17 +251,61 @@ class Node:
         id, coste, contenedor, new_mapa, new_asignados = self.generateParams(
             posicion)  # cogemos los parámetros que vamos a usar
         x, y = contenedor[0], contenedor[1]  # obtenemos las posiciones del contenedore
-        print(self.state.asignados)
+        coste_recolocar = 0  # por defecto
 
         # comprobar si tiene que reordenar
 
         if self.comprobar_asignado(x, y):
-            # coste = self.checkReordenate(x,y)
-
             self.state.contenedores[posicion] = [None, None, self.state.puerto_del_barco]  # desasigna su posición
             self.state.asignados.pop(id)  # borra el elemento de la lista de asignados
             self.state.mapa[x][y] = self.devolver_tipo(posicion)  # devolvemos a la casilla que había
-            self.g += 15 + 2 * (x + 1)  # coste = 15 + nº de filas
+            self.g += 15 + 2 * (x + 1) + coste_recolocar  # coste = 15 + nº de filas + el coste de recolocar (si lo hay)
+
+    '''
+    #método para recolocar los contenedores
+    def recolocar(self,posicion:int,x:int,y:int):
+        """si los contenedores están desordenados por puerto, los recoloca"""
+
+        nuevo_nodo = self.generateNode(self.state.contenedores, self.g, self.state.asignados, self.state.mapa,self.state.puerto_del_barco) #generamos un nuevo nodo
+        print("Nuevo nodo: ",nuevo_nodo)
+        descargados = {} #lista de descargados
+
+        for fila in range(0,x): #itera sobre esa pila
+            print(fila,y)
+
+            if (fila,y) in nuevo_nodo.state.asignados.values():
+                print("Esta posición está en asignados, vamos a descargarla",fila,y)
+                pos_descargar = nuevo_nodo.state.contenedores.index([fila,y,"B"]) #buscamos la posición en el array de cotnenedores
+
+                descargados[array_contenedores[pos_descargar][2]] = nuevo_nodo.state.contenedores[pos_descargar] #añade a la lista de contenedores
+                nuevo_nodo.descargar(pos_descargar) #descarga todos los contenedores hasta llegar a ese
+                print("Después de descargar: ",nuevo_nodo)
+
+
+
+        nuevo_nodo.descargar(posicion) #descargamos este, pero no lo volvemos a meter
+
+        print("descargados: ",descargados)
+
+        #aquí quedaría volver a cargarlos		
+
+
+
+        #descarga por orden de puertos
+
+
+        #descargados.ordenar() #ordena la lista de descargados
+
+        #for d in descargados:
+            #uevo_nodo.cargar(d) #aquí habría que almacenar la posición
+
+
+
+        #return nuevo_nodo.coste
+
+
+
+'''
 
     # métodos para generar parámetros y coordenadas
 
@@ -274,7 +343,7 @@ class Node:
         valores = list(self.state.asignados.values())
 
         return ((x, y) in valores and mapa[x][y] != "X" and (
-        (x < max_prof - 1 and (mapa[x + 1][y] == "X" or (x + 1, y) in valores) and (x - 1, y) not in valores)) or (
+        (x < max_prof - 1 and (mapa[x + 1][y] == "X" or (x + 1, y) in valores))) or (
                             x == max_prof - 1))  # esta comprobación no funciona
 
     def devolver_tipo(self, posicion: int):
@@ -359,36 +428,39 @@ print(nodo_inicial)
 print("Nodo final: ", nodo_final)
 
 print("-----------------------------------------------")
+print("-----------------------------------------------")
+print("-----------------------------------------------")
+print("-----------------------------------------------")
 
-lista = [nodo_inicial]
+abierta = [nodo_inicial]
 n = Node(estado_inicial)
 
 final = ""
 
 exito = False
 t_inicio = time.time()
-while not exito and len(lista) > 0:
 
-    n = lista.pop(0)  # quita el primero
+while exito is not True and len(abierta) > 0:
+
+    n = abierta.pop(0)  # quita el primero
     n.expandir()
-    for child in n.children:
-        lista.append(child)
 
+    for child in n.children:
         if child == nodo_final:
-            print("Aquí: ", child)
             final = child
             exito = True
-            t_final = time.time()
+
+        if child not in abierta:
+            abierta.append(child)
 
         print(child)
 
-    print("-----------------------------------------------")
+t_final = time.time()
 
 if exito:
     print("Has alcanzado el nodo final!!!!!")
-    print(len(final.path))
-    for node in final.path:
-        print(node.state.contenedores)
+    print("Nodos expandidos: ", final.nodos)
+
 else:
     print("Fracaso")
 
@@ -418,3 +490,7 @@ file.write("\nLongitud del plan: ")
 file.write("\nNodos expandidos: ")
 
 file.close()
+
+
+
+
