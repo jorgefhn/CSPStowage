@@ -22,19 +22,23 @@ def find_greater_above_containers(mat, num, deepest_cord):
   dic_row_of_greater_elem = {}
 
   for cord in deepest_cord:
-    fila = cord[0]
-    columna = cord[1]
-    dic_row_of_greater_elem[columna] = []
-    cont = 0 
+    if cord is not None:
+      fila = cord[0]
+      columna = cord[1]
+      dic_row_of_greater_elem[columna] = []
+      cont = 0 
 
-    while fila >= 0:
-      if mat[fila][columna] > num and mat[fila][columna] != 0:
-        cont +=1
-        dic_row_of_greater_elem[columna].append(fila)
-      fila -=1
-    num_of_greater_elems.append(cont)
+      while fila >= 0:
+        if mat[fila][columna] > num and mat[fila][columna] != 0:
+          cont +=1
+          dic_row_of_greater_elem[columna].append(fila)
+        fila -=1
+      num_of_greater_elems.append(cont)
 
-  return num_of_greater_elems, dic_row_of_greater_elem
+    print(num_of_greater_elems)
+    print(dic_row_of_greater_elem)
+
+    return num_of_greater_elems, dic_row_of_greater_elem
 
 def h1(mat,num):
     #Heuristica 1: multiplicar por los costes sin tomar en cuenta las posiciones, los elementos que estan mal colocados
