@@ -4,17 +4,18 @@ def find_deepest_container(mat, num):
   last_row = filas-1
   deepest_one = [None] * columnas
 
-  while last_row > 0:
-    for column in range(columnas):
-      elem = mat[column][last_row]
-      if elem == num and deepest_one[column] is None:
-        deepest_one[column] = [last_row, column]
+  for fila in range(len(mat)):
+    for columna in range(len(mat[0])):
+      elem = mat[filas-1-fila][columnas-1-columna]
+
+      if elem == num and deepest_one[columnas-1-columna] is None:
+        deepest_one[columnas-1-columna] = [filas-1-fila, columnas-1-columna]
       #print(str(mat[column][last_row]))
-    last_row-=1
     #print()
 
   #print(deepest_one)
   return deepest_one
+
 
 def find_greater_above_containers(mat, num, deepest_cord):
   num_of_greater_elems = []
