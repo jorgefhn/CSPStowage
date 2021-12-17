@@ -2,7 +2,7 @@
 
 
 from argparse import ArgumentParser
-
+from heuristicas import h1
 import random
 import math
 import copy
@@ -432,6 +432,27 @@ print("-----------------------------------------------")
 print("-----------------------------------------------")
 print("-----------------------------------------------")
 
+
+def retornaPuertos(node: Node):
+    """método auxiliar que coge los puertos de una matriz"""
+    mapa = copy.deepcopy(node.state.mapa)
+
+    for fila in range(len(mapa)):
+        for columna in range((len(mapa[fila]))):
+            if mapa[fila][columna] not in ("X", "E", "N"):
+                # busca el id
+                position = node.state.contenedores.index([fila, columna, "B"])  # busca la posición
+                mapa[fila][columna] = int(array_contenedores[position][2])
+
+            if mapa[fila][columna] in ("X", "E", "N"):
+                mapa[fila][columna] = -1
+
+    return (mapa)
+
+
+print("Retorna puertos: ")
+print(retornaPuertos(nodo_inicial))
+
 abierta = [nodo_inicial]
 n = Node(estado_inicial)
 
@@ -454,6 +475,10 @@ while exito is not True and len(abierta) > 0:
             abierta.append(child)
 
         print(child)
+        print("Retorna puertos: ")
+        print(retornaPuertos(child))
+        print(h1(retornaPuertos(child), n.state.puerto_del_barco))
+        print("-----------------------------------------------")
 
 t_final = time.time()
 
