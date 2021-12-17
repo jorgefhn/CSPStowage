@@ -3,6 +3,7 @@
 
 from argparse import ArgumentParser
 from heuristicas import h1
+from ASTAR_class import AStar
 import random
 import math
 import copy
@@ -95,6 +96,7 @@ print(drawMap(mapa))
 # --------------------------------------------------------
 
 
+# estado: [(para todo contenedor, [x,y,puerto_actual_contenedor]), puerto_actual_barco ]
 # si un contenedor está asignado, [posx,posy,puerto_actual]. Si no está asignado a ningún puerto, [None,None, B (barco)]. Si está descargado en un puerto, [None,None, puerto].
 
 # información estática que poseen los estados: array original de contenedores [id,tipo,puerto_destino]
@@ -214,8 +216,8 @@ class Node:
             # new_node.path = self.path
             new_node.path.append(self)
 
-    # new_node.path = self.path
-    # new_node.path.append(self)
+        # new_node.path = self.path
+        # new_node.path.append(self)
 
     def checkReordenate(self, posicion: int, x: int, y: int):
 
@@ -384,10 +386,17 @@ print("-----------------------------------------------")
 print("Retorna puertos: ")
 print(nodo_inicial.retornaPuertos())
 
+a_star = AStar(nodo_inicial, nodo_final)
+print(a_star.busqueda())
+
+'''
+
+
 abierta = [nodo_inicial]
 n = Node(estado_inicial)
 
 final = ""
+
 
 nodos_expandidos = 0
 exito = False
@@ -395,33 +404,39 @@ t_inicio = time.time()
 
 while exito is not True and len(abierta) > 0:
 
-    n = abierta.pop(0)  # quita el primero
-    n.expandir()
-    nodos_expandidos += 1
+	n = abierta.pop(0) #quita el primero
+	n.expandir()
+	nodos_expandidos += 1
 
-    for child in n.children:
-        if child == nodo_final:
-            final = child
-            exito = True
+	for child in n.children:
+		if child == nodo_final:
+			final = child
+			exito = True
 
-        if child not in abierta:
-            abierta.append(child)
 
-        print(child)
-        print("Retorna puertos: ")
-        print(child.retornaPuertos())
-        print(h1(child.retornaPuertos(), child.state.puerto_del_barco))
-        print("-----------------------------------------------")
+		if child not in abierta:
+			abierta.append(child)
+
+		print(child)
+		print("Retorna puertos: ")
+		print(child.retornaPuertos())
+		print(h1(child.retornaPuertos(),child.state.puerto_del_barco))
+		print("-----------------------------------------------")
+
+
+
 
 t_final = time.time()
 
-if exito:
-    print("Has alcanzado el nodo final!!!!!")
-    print("Nodos expandidos: ", nodos_expandidos)
-    for nodo in final.path:
-        print(nodo)
+if exito: 
+	print("Has alcanzado el nodo final!!!!!")
+	print("Nodos expandidos: ",nodos_expandidos)
+	for nodo in final.path:
+		print(nodo)
 else:
-    print("Fracaso")
+	print("Fracaso")
+
+'''
 
 # --------------------------------------------------------
 # sacar el resultado por un fichero
