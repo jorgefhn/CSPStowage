@@ -121,6 +121,9 @@ class State:
         var += "\nPuerto del barco: " + str(self.puerto_del_barco) + "\n"
         return var
 
+    def __eq__(self, other):
+        return self.contenedores == other.contenedores and self.mapa == other.mapa and self.puerto_del_barco == other.puerto_del_barco
+
 
 class Node:
 
@@ -348,9 +351,6 @@ class Node:
         var = str(self.state) + "\nCoste: " + str(self.g) + "\n"
         return var
 
-    def __eq__(self, other):
-        return self.state.contenedores == other.state.contenedores and self.state.puerto_del_barco == other.state.puerto_del_barco
-
 
 def busqueda(nodo_inicial, nodo_final):
     """método de búsqueda de A*"""
@@ -358,42 +358,40 @@ def busqueda(nodo_inicial, nodo_final):
     cerrada = heapdict.heapdict()
     exito = False
 
+    print(type(nodo_inicial))
     abierta[nodo_inicial] = nodo_inicial.f
 
     print(list(abierta))
 
     while (len(list(abierta.items()))) > 0 and not exito:
 
-        minimum = abierta.popitem()[1]  # quita el primer nodo de abierta
+        minimo = abierta.peekitem()[0]
 
-        if minimum == nodo_final:
-            exito = True
+        print("Minimo que vamos a comprobar: ", minimo)
 
-            print("Alcanza exito")
-        # verificar si hay que expandir el nodo una vez es el nodo final
+        print("Mínimo en cerrada: ", cerrada.get(minimo))
 
-        
+        if cerrada.get(minimo) is None:
 
-        if booleano:
-            # print("Mínimo: ",minimum)
-            print(list(abierta.items()))
+            minimum = abierta.popitem()  # quita el primer nodo de abierta
 
-            print("Aquí llega")
+            if minimum[0].state == nodo_final.state:
+                exito = True
 
-            if not exito:
-                print("Expande")
-                minimum.expandir()
+        if not exito:
 
-                cerrada[minimum.f] = minimum
+            minimum[0].expandir()
 
-                for child in minimum.children:
-                    abierta[child.f] = child
-                    print(child)
+            cerrada[minimum[0]] = minimum[0].f
 
-                print(list(abierta.items()))
+            print("Cerrada: ", list(cerrada.keys()))
+
+            for child in minimum[0].children:
+                abierta[child] = child.f
 
     if exito:
         print("Solución encontrada")
+
 
     else:
         print("Fracaso")
