@@ -3,12 +3,15 @@
 
 from argparse import ArgumentParser
 from heuristicas import h1
+
+from queue import PriorityQueue
 import random
 import math
 import copy
 import time
 import subprocess
 import sys
+import heapdict
 
 # para abrir el fichero y cargar sus argumentos
 
@@ -94,171 +97,6 @@ print(drawMap(mapa))
 
 
 # --------------------------------------------------------
-
-
-class AVLTree(object):
-
-    # Function to insert a node
-    def insert_node(self, root, key, content):
-
-        # Find the correct location and insert the node
-        if not root:
-            return TreeNode(key, content)
-        elif key < root.key:
-            root.left = self.insert_node(root.left, key, content)
-        else:
-            root.right = self.insert_node(root.right, key, content)
-
-        root.height = 1 + max(self.getHeight(root.left),
-                              self.getHeight(root.right))
-
-        # Update the balance factor and balance the tree
-        balanceFactor = self.getBalance(root)
-
-        print("Balance factor: ", balanceFactor)
-        if balanceFactor > 1:
-            if key < root.left.key:
-                return self.rightRotate(root)
-            else:
-                root.left = self.leftRotate(root.left)
-                return self.rightRotate(root)
-
-        if balanceFactor < -1:
-            if key > root.right.key:
-                return self.leftRotate(root)
-            else:
-
-                root.right = self.rightRotate(root.right)
-                return self.leftRotate(root)
-
-        return root
-
-    # Function to delete a node
-
-    def search_node(self, root, key):
-        """ Busca recursivamente un nodo"""
-
-        if key == root.key:
-            print("Éxito")
-            return True
-
-
-        elif key < root.key:
-            root.left = self.search_node(root.left, key)
-
-        elif key > root.key:
-            root.right = self.search_node(root.right, key)
-
-    def delete_node(self, root, key):
-
-        # Find the node to be deleted and remove it
-        if not root:
-            return root
-        elif key < root.key:
-            root.left = self.delete_node(root.left, key)
-        elif key > root.key:
-            root.right = self.delete_node(root.right, key)
-
-        # esto se queda igual
-
-        else:
-            if root.left is None:
-                temp = root.right
-                root = None
-                return temp
-            elif root.right is None:
-                temp = root.left
-                root = None
-                return temp
-            temp = self.getMinValueNode(root.right)
-            root.key = temp.key
-            root.right = self.delete_node(root.right,
-                                          temp.key)
-        if root is None:
-            return root
-
-        # Update the balance factor of nodes
-        root.height = 1 + max(self.getHeight(root.left),
-                              self.getHeight(root.right))
-
-        balanceFactor = self.getBalance(root)
-
-        # Balance the tree
-        if balanceFactor > 1:
-            if self.getBalance(root.left) >= 0:
-                return self.rightRotate(root)
-            else:
-                root.left = self.leftRotate(root.left)
-                return self.rightRotate(root)
-        if balanceFactor < -1:
-            if self.getBalance(root.right) <= 0:
-                return self.leftRotate(root)
-            else:
-                root.right = self.rightRotate(root.right)
-                return self.leftRotate(root)
-        return root
-
-    # Function to perform left rotation
-    def leftRotate(self, z):
-        y = z.right
-        T2 = y.left
-        y.left = z
-        z.right = T2
-        z.height = 1 + max(self.getHeight(z.left),
-                           self.getHeight(z.right))
-        y.height = 1 + max(self.getHeight(y.left),
-                           self.getHeight(y.right))
-        return y
-
-    # Function to perform right rotation
-    def rightRotate(self, z):
-        y = z.left
-        T3 = y.right
-        y.right = z
-        z.left = T3
-        z.height = 1 + max(self.getHeight(z.left),
-                           self.getHeight(z.right))
-        y.height = 1 + max(self.getHeight(y.left),
-                           self.getHeight(y.right))
-        return y
-
-    # Get the height of the node
-    def getHeight(self, root):
-        if not root:
-            return 0
-        return root.height
-
-    # Get balance factore of the node
-    def getBalance(self, root):
-        if not root:
-            return 0
-        return self.getHeight(root.left) - self.getHeight(root.right)
-
-    def getMinValueNode(self, root):
-        if root is None or root.left is None:
-            return root
-        return self.getMinValueNode(root.left)
-
-    def preOrder(self, root):
-        if not root:
-            return
-        print("{0} ".format(root.key), end="")
-        self.preOrder(root.left)
-        self.preOrder(root.right)
-
-    # Print the tree
-    def printHelper(self, currPtr, indent, last):
-        if currPtr is not None:
-            sys.stdout.write(indent)
-            if last:
-                sys.stdout.write("R----")
-                indent += "     "
-            else:
-                sys.stdout.write("L----")
-                indent += "|    "
-            print(currPtr.key)
-            self.printHelper(currPtr.left, indent, False)
-            self.printHelper(currPtr.right, indent, True)
 
 
 # estado: [(para todo contenedor, [x,y,puerto_actual_contenedor]), puerto_actual_barco ]
@@ -514,69 +352,52 @@ class Node:
         return self.state.contenedores == other.state.contenedores and self.state.puerto_del_barco == other.state.puerto_del_barco
 
 
-class TreeNode(Node):
-    def __init__(self, key, content):
-        self.key = key
-        self.content = content
-        self.left = None
-        self.right = None
-        self.height = 1
+def busqueda(nodo_inicial, nodo_final):
+    """método de búsqueda de A*"""
+    abierta = heapdict.heapdict()
+    cerrada = heapdict.heapdict()
+    exito = False
 
-    def __str__(self):
-        return str(self.content)
+    abierta[nodo_inicial] = nodo_inicial.f
 
-    def __eq__(self, other):
-        return self.key == other.key
+    print(list(abierta))
 
+    while (len(list(abierta.items()))) > 0 and not exito:
 
-class AStar():
-    def __init__(self, node_inicial, node_final):
-        self.abierta = AVLTree()
-        self.cerrada = AVLTree()
-        self.node_inicial = node_inicial
-        self.node_final = node_final
+        minimum = abierta.popitem()[1]  # quita el primer nodo de abierta
 
-    def busqueda(self):
+        if minimum == nodo_final:
+            exito = True
+            print("Alcanza exito")
+        # verificar si hay que expandir el nodo una vez es el nodo final
 
-        """método de búsqueda de A*"""
+        for item in list(cerrada.items()):
+            if abierta.peekitem()[1] == item[1]:
+                booleano = False
 
-        exito = False
-        root = None
-        root = self.abierta.insert_node(root, self.node_inicial.f, self.node_inicial)
+        if booleano:
+            # print("Mínimo: ",minimum)
+            print(list(abierta.items()))
 
-        while root is not None or not exito:
-
-            root = self.abierta.getMinValueNode(root)  # devuelve Nodo
-            self.abierta.delete_node(root, root.key)  # quita el primer nodo de abierta
-
-            print("Abierta: ")
-            self.abierta.printHelper(root, "", True)
-
-            print(root)
-
-            if root.content == self.node_final:
-                exito = True
-                # verificar si hay que expandir el nodo una vez es el nodo final
+            print("Aquí llega")
 
             if not exito:
-                root.content.expandir()
+                print("Expande")
+                minimum.expandir()
 
-                if root is not None:
-                    print("Self.cerrada: ")
-                    self.cerrada.printHelper(root, "", True)
+                cerrada[minimum.f] = minimum
 
-                    self.cerrada.insert_node(root, root.content.f, root.content)
-
-                for child in root.content.children:
+                for child in minimum.children:
+                    abierta[child.f] = child
                     print(child)
-                    new_t_node = None
-                    new_t_node = self.abierta.insert_node(new_t_node, child.f, child)
 
-        if exito:
-            solucion = n.path
-            return solucion
+                print(list(abierta.items()))
 
-        return ("Fracaso")
+    if exito:
+        print("Solución encontrada")
+
+    else:
+        print("Fracaso")
 
 
 # --------------------------------------------------------
@@ -615,65 +436,15 @@ print("-----------------------------------------------")
 print("-----------------------------------------------")
 print("-----------------------------------------------")
 
-a_star = AStar(nodo_inicial, nodo_final)
-print(a_star.busqueda())
-
-'''
-
-
-abierta = [nodo_inicial]
-n = Node(estado_inicial)
-
-final = ""
-
-
-nodos_expandidos = 0
-exito = False
-t_inicio = time.time()
-
-while exito is not True and len(abierta) > 0:
-
-	n = abierta.pop(0) #quita el primero
-	n.expandir()
-	nodos_expandidos += 1
-
-	for child in n.children:
-		if child == nodo_final:
-			final = child
-			exito = True
-
-
-		if child not in abierta:
-			abierta.append(child)
-
-		print(child)
-		print("Retorna puertos: ")
-		print(child.retornaPuertos())
-		print(h1(child.retornaPuertos(),child.state.puerto_del_barco))
-		print("-----------------------------------------------")
-
-
-
-
-t_final = time.time()
-
-if exito: 
-	print("Has alcanzado el nodo final!!!!!")
-	print("Nodos expandidos: ",nodos_expandidos)
-	for nodo in final.path:
-		print(nodo)
-else:
-	print("Fracaso")
-
-'''
+busqueda(nodo_inicial, nodo_final)
 
 # --------------------------------------------------------
 # sacar el resultado por un fichero
 file = open(args.mapa + "-" + args.contenedores + "-" + args.heuristica + ".output", "w")
-file.write("Tiempo total: " + str(t_final - t_inicio))
-file.write("\nCoste total: " + str(final.g))
+# file.write("Tiempo total: "+str(t_final-t_inicio))
+# file.write("\nCoste total: "+str(final.g))
 file.write("\nLongitud del plan: ")
-file.write("\nNodos expandidos: " + str(nodos_expandidos))
+# file.write("\nNodos expandidos: "+str(nodos_expandidos))
 
 file.close()
 
