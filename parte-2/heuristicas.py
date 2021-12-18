@@ -66,15 +66,15 @@ def h1(mat,num):
     return acum
 
 
-def h2(mat,num):
+def h2(mat, num):
     #Heuristica 2: multiplicar por los costes tomando en cuenta las posiciones, los elementos que estan mal colocados
     deepest = find_deepest_container(mat,num)
     num_of_greater , dict_pos_of_grater = find_greater_above_containers(mat,num, deepest)
     acum = 0 
-    #print_params(deepest, num_of_greater, dict_pos_of_grater)
-    for column in range(len(deepest)):
+    #print_params(num, deepest, num_of_greater, dict_pos_of_grater)
+    for column in dict_pos_of_grater:
       for height in dict_pos_of_grater[column]:
-        acum += 25 + 3 * height
+          acum += 25 + 3 * height
 
     print("Resultado de la heuristica: " + str(acum)) 
     return acum
@@ -94,3 +94,11 @@ def h3(mat,num):
     return acum
 
 #h3(mat,1)
+
+
+def print_params(num, deepest, num_of_greater, dict_pos_of_grater):
+    print("The number being evaluate is ", num)
+    print("The positiion of the deepests " +str(num) +"'s are "+ str(deepest))
+    print("The number of elemments that are greater is ", num_of_greater)
+    print("The position of those greater elems are ", dict_pos_of_grater)
+    print()
