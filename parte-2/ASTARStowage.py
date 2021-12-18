@@ -368,12 +368,11 @@ def busqueda(nodo_inicial, nodo_final):
 
         if minimum == nodo_final:
             exito = True
+
             print("Alcanza exito")
         # verificar si hay que expandir el nodo una vez es el nodo final
 
-        for item in list(cerrada.items()):
-            if abierta.peekitem()[1] == item[1]:
-                booleano = False
+        
 
         if booleano:
             # print("Mínimo: ",minimum)
