@@ -133,17 +133,16 @@ class Node:
         self.g = g  # funcion de costes de operadores aplicados
         self.state = state
         self.h = self.elegirHeuristica(id_heuristica)
-
         self.f = self.costeTotal()  # distancia del nodo al nodo inicial (ver si se puede usar)
-
-        self.actions = actions
 
         if parent:
             self.path = parent.path
+            self.actions = parent.actions
 
 
         else:
             self.path = []
+            self.actions = []
 
     def expandir(self):
 
@@ -174,7 +173,7 @@ class Node:
                     1]
 
                 new_node.descargar(cont_nuevo)
-                self.checkDifferent(new_node, new_contenedores, cont_nuevo)
+                self.checkDifferent(new_node, new_contenedores, cont_nuevo, action)
 
             if action == "carga":
 
@@ -187,7 +186,7 @@ class Node:
                     new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
                                                  self.state.puerto_del_barco)  # generamos un nuevo nodo
                     new_node.cargar(cont, x, y)
-                    self.checkDifferent(new_node, new_contenedores, cont)
+                    self.checkDifferent(new_node, new_contenedores, cont, action)
 
     # métodos que comprueban la acción a realizar
 
@@ -218,11 +217,12 @@ class Node:
 
         return True  # tiene que navegar, todos están en el barco
 
-    def checkDifferent(self, new_node, new_contenedores: list, cont: int):
+    def checkDifferent(self, new_node, new_contenedores: list, cont: int, action: str):
 
         if new_contenedores[cont] != self.state.contenedores[cont] and new_node not in self.path:
             self.children.append(new_node)  # añade el nodo a los hijos
             new_node.path.append(self)
+            new_node.actions.append(action)
 
     def checkReordenate(self, posicion: int, x: int, y: int):
 
@@ -384,8 +384,9 @@ def busqueda(nodo_inicial, nodo_final):
 
         coste_minimo, min_cost_serial = sys.maxsize, 0
         for el in range(len(abierta)):
-            if abierta[el].f < coste_minimo:
-                coste_minimo = abierta[el].f
+            # print("Coste: ",abierta[el].costeTotal())
+            if abierta[el].costeTotal() < coste_minimo:
+                coste_minimo = abierta[el].costeTotal()
                 min_cost_serial = el
 
         minimo = abierta.pop(min_cost_serial)
@@ -455,7 +456,7 @@ print(t_final - t_inicio)
 # sacar el resultado por un fichero
 file = open(args.mapa + "-" + args.contenedores + "-" + args.heuristica + ".output", "w")
 file.write("Tiempo total: " + str(t_final - t_inicio))
-file.write("\nCoste total: " + str(ult_nodo.f))
+file.write("\nCoste total: " + str(ult_nodo.costeTotal()))
 file.write("\nLongitud del plan: " + str(len(ult_nodo.path[1:])))
 file.write("\nNodos expandidos: " + str(nodos_expandidos))
 
