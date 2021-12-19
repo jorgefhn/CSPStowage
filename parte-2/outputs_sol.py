@@ -3,14 +3,16 @@
 def output_sol(mapa,contenedores,heuristica, ult_nodo):
     file = open(mapa + "-" + contenedores + "-" + heuristica + ".output", "w")
     file.write("ID de accion"+"\t|\t"+" Accion"+"\t\t|\t"+"Contenedor / Origen"+"\t|\t"+" Posicion / Destino"+"\t|\n")
-
     for i in range(len(ult_nodo.actions)):
         accion = ult_nodo.actions[i][0]
         if accion == "Cargar":
             id = ult_nodo.actions[i][1]
             posicion = str(ult_nodo.actions[i][2]) + "," + str(ult_nodo.actions[i][3])
             file.write("\t" + str(i) + ".\t\t\t|\t" + accion + "\t\t|\t\t\t" + id + "\t\t\t|\t\t\t" + posicion +"\t\t\t|\n")
+
         elif accion == "Descargar":
+            id = ult_nodo.actions[i][1]
+            posicion = str(ult_nodo.actions[i][2]) + "," + str(ult_nodo.actions[i][3])
             file.write("\t" + str(i) + ".\t\t\t|\t" + accion + "\t|\t\t\t" + id + "\t\t\t|\t\t\t" + posicion + "\t\t\t|\n")
         else:
             origen = str(ult_nodo.actions[i][1])

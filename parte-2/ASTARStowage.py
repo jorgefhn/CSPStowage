@@ -116,28 +116,6 @@ class Node:
 
         return True  # tiene que navegar, todos están en el barco
 
-    def checkDifferent(self, new_node, new_contenedores: list, cont: int, action: str):
-
-        if new_contenedores[cont] != self.state.contenedores[cont] and new_node not in self.path:
-
-            self.children.append(new_node)  # añade el nodo a los hijos
-            new_node.path.append(self)
-
-            new_actions = copy.deepcopy(self.actions)
-
-            if action == "carga":
-                # id del contenedor,posición x,y y puerto
-                ac = ["Cargar", array_contenedores[cont][0], new_contenedores[cont][0],
-                      new_contenedores[cont][1], self.state.puerto_del_barco]
-                new_actions.append(ac)
-
-            # id del contenedor, puerto
-            if action == "descarga":
-                ac = ["Descargar", array_contenedores[cont][0], new_contenedores[cont][0],
-                      new_contenedores[cont][1], self.state.puerto_del_barco]
-                new_actions.append(ac)
-            new_node.actions = new_actions
-
     def checkReordenate(self, posicion: int, x: int, y: int):
 
         for fila in range(0, x):  # itera sobre toda la pila
@@ -278,6 +256,26 @@ class Node:
 
         return (mapa)
 
+
+    def checkDifferent(self, new_node, new_contenedores: list, cont: int, action: str, cont_id=None, pos_x = None, pos_y = None):
+
+        if new_contenedores[cont] != self.state.contenedores[cont] and new_node not in self.path:
+
+            self.children.append(new_node)  # añade el nodo a los hijos
+            new_node.path.append(self)
+
+            new_actions = copy.deepcopy(self.actions)
+
+            if action == "carga":
+                # id del contenedor,posición x,y y puerto
+                ac = ["Cargar", array_contenedores[cont][0], new_contenedores[cont][0],
+                      new_contenedores[cont][1], self.state.puerto_del_barco]
+                new_actions.append(ac)
+
+            new_node.actions = new_actions
+
+
+
     #metodo que expande un nodo
     def expandir(self):
 
@@ -307,13 +305,21 @@ class Node:
                                              self.state.puerto_del_barco)  # generamos un nuevo nodo
 
                 x, y = new_node.state.contenedores[cont][0], new_node.state.contenedores[cont][1]
-                cont_nuevo = new_node.checkReordenate(cont, x, y)
+                pos_x = copy.deepcopy(x)
+                pos_y = copy.deepcopy(y)
+                cont_nuevo = new_node.checkReordenate(cont, pos_x, pos_y)
+
 
 
                 new_node.descargar(cont_nuevo)
-                self.checkDifferent(new_node, new_contenedores, cont_nuevo, action)
 
-            if action == "carga":
+                self.checkDifferent(new_node, new_contenedores, cont_nuevo, action, array_contenedores[cont][0],pos_x,pos_y)
+
+                ac = ["Descargar", array_contenedores[cont_nuevo][0], x_antes, y_antes, self.state.puerto_del_barco]
+                new_node.actions.append(ac)
+
+
+            elif action == "carga":
 
                 for pos in posibles_coordenadas:  # por cada posible combinación
                     x, y = pos[0], pos[1]
