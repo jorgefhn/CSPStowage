@@ -123,19 +123,20 @@ class Node:
             self.children.append(new_node)  # añade el nodo a los hijos
             new_node.path.append(self)
 
-            ac = ""
+            new_actions = copy.deepcopy(new_node.parent.actions)
 
             if action == "carga":
                 # id del contenedor,posición x,y y puerto
                 ac = ["Cargar", array_contenedores[cont][0], new_contenedores[cont][0],
                       new_contenedores[cont][1], self.state.puerto_del_barco]
+                new_actions.append(ac)
 
             # id del contenedor, puerto
             if action == "descarga":
                 ac = ["Descargar", array_contenedores[cont][0], new_contenedores[cont][0],
                       new_contenedores[cont][1], self.state.puerto_del_barco]
-
-            new_node.actions.append(ac)
+                new_actions.append(ac)
+            new_node.actions = new_actions
 
     def checkReordenate(self, posicion: int, x: int, y: int):
 
@@ -161,6 +162,7 @@ class Node:
             self.state.mapa[x][y] = str(id)  # guardamos el id en la celda
             self.state.asignados[id] = (x, y)
             self.g += 10 + (x + 1)  # coste = 10 + nº de filas
+
 
     def descargar(self, posicion: int):
         """método que coge contenedor y lo descarga de la lista de contenedores"""
@@ -400,7 +402,7 @@ def busqueda_v2(nodo_inicial, nodo_final):
             nodos_expandidos += 1
             cerrada[minimo] = minimo.f
 
-            print("Cerrada: ", list(cerrada.keys()))
+            #print("Cerrada: ", list(cerrada.keys()))
 
             for child in minimo.children:
                 abierta[child] = child.f
