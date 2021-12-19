@@ -396,10 +396,6 @@ estado_final = State(contenedores_finales, puerto_final, mapa)
 
 nodo_inicial = Node(estado_inicial)
 nodo_final = Node(estado_final)
-# print(nodo_inicial)
-
-
-# print("Nodo final: ",nodo_final)
 
 t_inicio = time.time()
 ult_nodo, nodos_expandidos = busqueda(nodo_inicial, nodo_final)
