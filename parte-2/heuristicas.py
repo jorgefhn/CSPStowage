@@ -62,7 +62,7 @@ def h1(mat,num):
     for elems in num_of_greater:
       acum += elems * 25
 
-    print("Resultado de la heuristica: " + str(acum)) 
+    #print("Resultado de la heuristica: " + str(acum))
     return acum
 
 
@@ -77,7 +77,7 @@ def h2(mat, num):
       for height in dict_pos_of_grater[column]:
           acum += 25 + 3 * height
 
-    print("Resultado de la heuristica: " + str(acum)) 
+    #print("Resultado de la heuristica: " + str(acum))
     return acum
 
 
@@ -92,7 +92,7 @@ def h3(mat,num):
     for elems in num_of_greater:
       acum += elems
 
-    print("Resultado de la heuristica: " + str(acum)) 
+    #print("Resultado de la heuristica: " + str(acum))
     return acum
 
 #h3(mat,1)
