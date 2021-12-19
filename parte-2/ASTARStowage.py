@@ -448,7 +448,7 @@ for cont in array_contenedores:
     contenedores_iniciales.append([None, None, 0])
     contenedores_finales.append([None, None, int(cont[2])])
 
-# --------------------------------------------------------
+"""################################# SIMULACION DEL MAIN #############################################"""
 
 puerto_inicial = 0
 estado_inicial = State(contenedores_iniciales, puerto_inicial, mapa)  # estado inicial
