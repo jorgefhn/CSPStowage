@@ -437,7 +437,6 @@ def busqueda(nodo_inicial, nodo_final):
 
 # --------------------------------------------------------
 
-
 # obtenemos el puerto final
 puerto_final = 0
 for cont in array_contenedores:
