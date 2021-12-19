@@ -5,13 +5,10 @@ from argparse import ArgumentParser
 from heuristicas import h1, h2, h3
 
 from queue import PriorityQueue
-import random
-import math
 import copy
 import time
-import subprocess
 import sys
-import heapdict
+from heapdict import heapdict
 import outputs_sol
 import input_parser
 
@@ -88,7 +85,7 @@ class Node:
         var = str(self.state) + "\nFunción de evaluación: " + str(self.costeTotal()) + "\n"
         return var
 
-    def __eq__(self, other):
+    def checkEqual(self, other):
         return self.state == other.state
 
     # métodos que comprueban la acción a realizar
@@ -243,7 +240,7 @@ class Node:
             return h1(mapa, self.state.puerto_del_barco)
 
         if id_heuristica == "h2":
-            return h2(mapa, self.state.puerto_del_barco)
+            return h2(mapa,self.state.puerto_del_barco)
 
         if id_heuristica == "h3":
             return h3(mapa, self.state.puerto_del_barco)
@@ -351,7 +348,7 @@ def busqueda(nodo_inicial, nodo_final):
 
         if minimo not in cerrada:
 
-            if minimo == nodo_final:
+            if minimo.checkEqual(nodo_final):
                 exito = True
                 minimo.path.append(minimo)  # añadimos el nodo final
                 ultimo_nodo = minimo
@@ -372,6 +369,53 @@ def busqueda(nodo_inicial, nodo_final):
         return result
     else:
         return result
+
+
+def busqueda_v2(nodo_inicial, nodo_final):
+    """método de búsqueda de A*"""
+    result = [-1, -1]
+    nodos_expandidos = 0
+    abierta = heapdict()
+    cerrada = heapdict()
+    exito = False
+    abierta[nodo_inicial] = nodo_inicial.f
+    #print(nodo_inicial.f)
+    while len(abierta.keys()) > 0 and not exito:
+
+        minimo = abierta.peekitem()[0]
+
+        #print("Minimo que vamos a comprobar: ", minimo)
+
+        #print("Mínimo en cerrada: ", cerrada.get(minimo))
+
+        if cerrada.get(minimo) is None:
+
+            minimo = abierta.popitem()[0]  # quita el primer nodo de abierta
+
+            if minimo.checkEqual(nodo_final):
+                exito = True
+
+        if not exito:
+            minimo.expandir()
+            nodos_expandidos += 1
+            cerrada[minimo] = minimo.f
+
+            print("Cerrada: ", list(cerrada.keys()))
+
+            for child in minimo.children:
+                abierta[child] = child.f
+
+    if exito:
+        print("Solución encontrada")
+        result[0]=minimo
+        result[1]=nodos_expandidos
+        return result
+
+
+    else:
+        print("Fracaso")
+        return result
+
 
 
 # --------------------------------------------------------
@@ -398,10 +442,11 @@ nodo_inicial = Node(estado_inicial)
 nodo_final = Node(estado_final)
 
 t_inicio = time.time()
-ult_nodo, nodos_expandidos = busqueda(nodo_inicial, nodo_final)
+ult_nodo, nodos_expandidos = busqueda_v2(nodo_inicial, nodo_final)
+print(ult_nodo)
 t_final = time.time()
 
-# -----Save Output---------------------------------------------------
+# ----------------------------------------- Save Output ---------------------------------------------------
 outputs_sol.output_sol(args.mapa,args.contenedores,args.heuristica, ult_nodo)
 outputs_sol.stat_sol(args.mapa, args.contenedores, args.heuristica, t_inicio, t_final, ult_nodo, nodos_expandidos)
 
