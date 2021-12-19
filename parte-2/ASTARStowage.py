@@ -12,6 +12,7 @@ import time
 import subprocess
 import sys
 import heapdict
+import outputs_sol
 
 # para abrir el fichero y cargar sus argumentos
 
@@ -152,8 +153,7 @@ class Node:
         if self.checkNavigate():
             new_node = self.generateNode(self.state.contenedores, self.g + 3500, self.state.asignados, self.state.mapa,
                                          self.state.puerto_del_barco + 1)  # generamos nuevo nodo
-            ac = ["Navegar: ", "Puerto de origen: ", self.state.puerto_del_barco, "Puerto de destino: ",
-                  self.state.puerto_del_barco + 1]
+            ac = ["Navegar", self.state.puerto_del_barco, self.state.puerto_del_barco + 1]
             new_node.actions.append(ac)
             self.children.append(new_node)  # añade a children
 
@@ -231,13 +231,13 @@ class Node:
 
             if action == "carga":
                 # id del contenedor,posición x,y y puerto
-                ac = ["carga", "Id: ", array_contenedores[cont][0], "x:", new_contenedores[cont][0], "y: ",
-                      new_contenedores[cont][1], "Puerto de donde carga: ", self.state.puerto_del_barco]
+                ac = ["Cargar", array_contenedores[cont][0], new_contenedores[cont][0],
+                      new_contenedores[cont][1], self.state.puerto_del_barco]
 
             # id del contenedor, puerto
             if action == "descarga":
-                ac = ["descarga", "Id: ", array_contenedores[cont][0], "Puerto donde descarga: ",
-                      self.state.puerto_del_barco]
+                ac = ["Descargar", array_contenedores[cont][0], new_contenedores[cont][0],
+                      new_contenedores[cont][1], self.state.puerto_del_barco]
 
             new_node.actions.append(ac)
 
@@ -469,25 +469,10 @@ t_final = time.time()
 
 
 
-# --------------------------------------------------------
-# .output
+# -----Save Output---------------------------------------------------
+outputs_sol.output_sol(args.mapa,args.contenedores,args.heuristica, ult_nodo)
+outputs_sol.stat_sol(args.mapa, args.contenedores, args.heuristica, t_inicio, t_final, ult_nodo, nodos_expandidos)
 
-file = open(args.mapa + "-" + args.contenedores + "-" + args.heuristica + ".output", "w")
-file.write("ID de accion | Accion | Posicion | Contenedor | Mapa\n")
-
-for i in range(len(ult_nodo.actions)):
-    file.write("\t\t" + str(i) + "\t\t\t\t" + str(ult_nodo.actions[i]) + "\n")
-
-file.close()
-
-# .stat
-file = open(args.mapa + "-" + args.contenedores + "-" + args.heuristica + ".stat", "w")
-file.write("Tiempo total: " + str(t_final - t_inicio))
-file.write("\nCoste total: " + str(ult_nodo.costeTotal()))
-file.write("\nLongitud del plan: " + str(len(ult_nodo.actions)))
-file.write("\nNodos expandidos: " + str(nodos_expandidos))
-
-file.close()
 
 
 
