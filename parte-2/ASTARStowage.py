@@ -2,7 +2,7 @@
 
 
 from argparse import ArgumentParser
-from heuristicas import h1, h2, h3
+from heuristicas import h1, h2, h3,h4
 
 from queue import PriorityQueue
 import copy
@@ -36,10 +36,13 @@ array_contenedores = input_parser.devuelveContenedores(contenedores)
 mapa = input_parser.generateMap(mapa)
 n_pilas, max_prof = len(mapa[0]), len(mapa)
 
-print("Contenedores:")
-print(array_contenedores)
-print("Generamos mapa: ")
-print(input_parser.drawMap(mapa))
+
+
+# obtenemos el puerto final
+puerto_final = 0
+for cont in array_contenedores:
+    if int(cont[2]) > puerto_final:
+        puerto_final = int(cont[2])
 
 
 """########################## CODIGO RELATIVO A LA IMPLEMENTACION ##################################"""
@@ -212,7 +215,7 @@ class Node:
         return False
 
     def elegirHeuristica(self, id_heuristica: str):
-        """método de elegir heurística"""
+        """método de elegir heurística. Llama a las funciones del fichero heuristicas.py"""
 
         mapa = self.retornaPuertos()
 
@@ -225,7 +228,11 @@ class Node:
         if id_heuristica == "h3":
             return h3(mapa, self.state.puerto_del_barco)
 
-    # metodo que crea nodos
+        if id_heuristica == "h4":
+            return h4(mapa, self.state.puerto_del_barco,puerto_final)
+
+
+    
     def generateNode(self, new_contenedores: list, coste: int, new_asignados: list, new_mapa: list, new_puerto):
         """método auxiliar que genera nodo"""
         new_state = State(new_contenedores, new_puerto, new_mapa)
@@ -235,13 +242,14 @@ class Node:
         new_node.g += coste
         return new_node
 
-    #metodo que calcula la f del nodo
+    
     def costeTotal(self):
+        """Calcula la función de evaluación del nodo"""
         return self.g + self.h
 
-    # método que devuelve un mapa con los puertos
+    
     def retornaPuertos(self):
-        """método auxiliar que coge los puertos de una matriz"""
+        """método auxiliar que devuelve una matriz con los puertos de destino de cada contenedor"""
         mapa = copy.deepcopy(self.state.mapa)
 
         for fila in range(len(mapa)):
@@ -257,9 +265,10 @@ class Node:
         return (mapa)
 
     def checkDifferent(self, new_node, new_contenedores: list, cont: int, action: str, cont_id=None, pos_x = None, pos_y = None):
+        """Método auxiliar que sirve para comprobar si se han realizado cambios en la información de un contenedor."""
 
         if new_contenedores[cont] != self.state.contenedores[cont] and new_node not in self.path:
-
+            #son diferentes, añadimos nuevo
             self.children.append(new_node)  # añade el nodo a los hijos
             new_node.path.append(self)
 
@@ -273,13 +282,12 @@ class Node:
 
             new_node.actions = new_actions
 
-    #metodo que expande un nodo
     def expandir(self):
-
+        """método que expande el nodo y genera sucesores"""
         # crear todas las posibilidades válidas y añadirlas
-        posibles_coordenadas = self.generateCoordinates()  # genera las posibles coordenadas
+        posibles_coordenadas = self.generateCoordinates()  # genera todas las posibles coordenadas
 
-        if self.checkNavigate():
+        if self.checkNavigate(): #si tiene que navegar
             new_node = self.generateNode(self.state.contenedores, self.g + 3500, self.state.asignados, self.state.mapa,
                                          self.state.puerto_del_barco + 1)  # generamos nuevo nodo
 
@@ -287,6 +295,8 @@ class Node:
             ac = ["Navegar", self.state.puerto_del_barco, self.state.puerto_del_barco + 1]
             new_node.actions.append(ac)
             self.children.append(new_node)  # añade a children
+
+
 
         for cont in range(len(self.state.contenedores)):
 
@@ -296,74 +306,73 @@ class Node:
 
             if action == "descarga":  # hay que descargar
                 # checkear si tiene contenedores desordenados
-                new_contenedores = copy.deepcopy(
-                    self.state.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
-                new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
-                                             self.state.puerto_del_barco)  # generamos un nuevo nodo
+                new_contenedores = copy.deepcopy(self.state.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
+                new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,self.state.puerto_del_barco)  # generamos un nuevo nodo
 
+                #cogemos posiciones antiguas y hacemos deep copies
                 x, y = new_node.state.contenedores[cont][0], new_node.state.contenedores[cont][1]
-                pos_x = copy.deepcopy(x)
-                pos_y = copy.deepcopy(y)
+                pos_x,pos_y= copy.deepcopy(x),copy.deepcopy(y)
+
+                #buscamos si se tienen que reordenar
+
                 cont_nuevo = new_node.checkReordenate(cont, pos_x, pos_y)
 
-                x_antes,y_antes = new_contenedores[cont_nuevo][0],new_contenedores[cont_nuevo][1]
-                new_node.descargar(cont_nuevo)
+                #generamos las nuevas posiciones
+                x_despues,y_despues = new_contenedores[cont_nuevo][0],new_contenedores[cont_nuevo][1]
+                new_node.descargar(cont_nuevo) #lo descargamos
 
-                self.checkDifferent(new_node, new_contenedores, cont_nuevo, action, array_contenedores[cont][0],pos_x,pos_y)
+                self.checkDifferent(new_node, new_contenedores, cont_nuevo, action, array_contenedores[cont][0],pos_x,pos_y) #comprobamos si es diferente. Si lo es, lo añade.
 
-                ac = ["Descargar", array_contenedores[cont_nuevo][0], x_antes, y_antes, self.state.puerto_del_barco]
+                ac = ["Descargar", array_contenedores[cont_nuevo][0], x_despues, y_despues, self.state.puerto_del_barco] #añadimos la acción a la lista de acciones
                 new_node.actions.append(ac)
 
 
             elif action == "carga":
 
-                for pos in posibles_coordenadas:  # por cada posible combinación
+                for pos in posibles_coordenadas:  # por cada posible combinación de posiciones x y con cada contenedor
                     x, y = pos[0], pos[1]
-                    new_contenedores = copy.deepcopy(
-                        self.state.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
+                    new_contenedores = copy.deepcopy(self.state.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
+
                     coste, contenedor, new_mapa, new_asignados = self.generateParams(cont)[1:]
 
-                    new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
-                                                 self.state.puerto_del_barco)  # generamos un nuevo nodo
-
+                    new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,self.state.puerto_del_barco)  # generamos un nuevo nodo
 
                     new_node.cargar(cont, x, y)
                     self.checkDifferent(new_node, new_contenedores, cont, action)
 
 
 def busqueda(nodo_inicial, nodo_final):
-    """método de búsqueda de A*"""
+    """método de búsqueda de A* usando la implementación de heapdict"""
     result = [-1, -1]
     nodos_expandidos = 0
+    exito = False
+
     abierta = heapdict()
     cerrada = heapdict()
-    exito = False
+    #metemos el primer nodo en abierta
     abierta[nodo_inicial] = nodo_inicial.f
-    #print(nodo_inicial.f)
+
+    #hasta que haya elementos en abierta o no se haya encontrado la solúción
     while len(abierta.keys()) > 0 and not exito:
 
-        minimo = abierta.peekitem()[0]
+        minimo = abierta.peekitem()[0] #cogemos el primero
 
-        #print("Minimo que vamos a comprobar: ", minimo)
 
-        #print("Mínimo en cerrada: ", cerrada.get(minimo))
-
-        if cerrada.get(minimo) is None:
+        if cerrada.get(minimo) is None: #si no está en cerrada
 
             minimo = abierta.popitem()[0]  # quita el primer nodo de abierta
 
-            if minimo.checkEqual(nodo_final):
+            if minimo.checkEqual(nodo_final): #si es igual al nodo final
                 exito = True
 
-        if not exito:
+        if not exito: #si no ha encontrado la solución
             minimo.expandir()
             nodos_expandidos += 1
-            cerrada[minimo] = minimo.f
+            cerrada[minimo] = minimo.f #lo mete en cerrada
 
-            #print("Cerrada: ", list(cerrada.keys()))
-
+            #mete cada sucesor en abierta
             for child in minimo.children:
-                abierta[child] = child.f
+                abierta[child] = child.f 
 
     if exito:
         print("Solución encontrada")
@@ -373,24 +382,20 @@ def busqueda(nodo_inicial, nodo_final):
 
 
     else:
-        print("Fracaso")
+        print("No se ha encontrado solución")
+        result[1] = nodos_expandidos 
         return result
 
 
 
 # --------------------------------------------------------
 
-# obtenemos el puerto final
-puerto_final = 0
-for cont in array_contenedores:
-    if int(cont[2]) > puerto_final:
-        puerto_final = int(cont[2])
 
-contenedores_iniciales = []
-contenedores_finales = []
+contenedores_iniciales,contenedores_finales = [],[]
+
 for cont in array_contenedores:
-    contenedores_iniciales.append([None, None, 0])
-    contenedores_finales.append([None, None, int(cont[2])])
+    contenedores_iniciales.append([None, None, 0]) #inicial
+    contenedores_finales.append([None, None, int(cont[2])]) #final
 
 """################################# SIMULACION DEL MAIN #############################################"""
 
@@ -403,6 +408,7 @@ nodo_final = Node(estado_final)
 
 t_inicio = time.time()
 ult_nodo, nodos_expandidos = busqueda(nodo_inicial, nodo_final)
+
 t_final = time.time()
 
 # ----------------------------------------- Save Output ---------------------------------------------------
