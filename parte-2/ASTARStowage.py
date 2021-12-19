@@ -144,53 +144,6 @@ class Node:
         else:
             self.path = []
             self.actions = []
-
-    def expandir(self):
-
-        # crear todas las posibilidades válidas y añadirlas
-        posibles_coordenadas = self.generateCoordinates()  # genera las posibles coordenadas
-
-        if self.checkNavigate():
-            new_node = self.generateNode(self.state.contenedores, self.g + 3500, self.state.asignados, self.state.mapa,
-                                         self.state.puerto_del_barco + 1)  # generamos nuevo nodo
-            ac = ["Navegar", self.state.puerto_del_barco, self.state.puerto_del_barco + 1]
-            new_node.actions.append(ac)
-            self.children.append(new_node)  # añade a children
-
-        for cont in range(len(self.state.contenedores)):
-
-            action = self.checkAction(cont)  # comprueba que hacer: si cargar o descargar
-
-            coste, contenedor, new_mapa, new_asignados = self.generateParams(cont)[1:]
-
-            if action == "descarga":  # hay que descargar
-                # checkear si tiene contenedores desordenados
-                new_contenedores = copy.deepcopy(
-                    self.state.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
-                new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
-                                             self.state.puerto_del_barco)  # generamos un nuevo nodo
-
-                x, y = new_node.state.contenedores[cont][0], new_node.state.contenedores[cont][1]
-                cont_nuevo = new_node.checkReordenate(cont, x, y)
-                x_nuevo, y_nuevo = new_node.state.contenedores[cont_nuevo][0], new_node.state.contenedores[cont_nuevo][
-                    1]
-
-                new_node.descargar(cont_nuevo)
-                self.checkDifferent(new_node, new_contenedores, cont_nuevo, action)
-
-            if action == "carga":
-
-                for pos in posibles_coordenadas:  # por cada posible combinación
-                    x, y = pos[0], pos[1]
-                    new_contenedores = copy.deepcopy(
-                        self.state.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
-                    coste, contenedor, new_mapa, new_asignados = self.generateParams(cont)[1:]
-
-                    new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
-                                                 self.state.puerto_del_barco)  # generamos un nuevo nodo
-                    new_node.cargar(cont, x, y)
-                    self.checkDifferent(new_node, new_contenedores, cont, action)
-
     # métodos que comprueban la acción a realizar
 
     def checkAction(self, cont: int):
@@ -387,6 +340,55 @@ class Node:
 
     def __eq__(self, other):
         return self.state == other.state
+
+    def expandir(self):
+
+        # crear todas las posibilidades válidas y añadirlas
+        posibles_coordenadas = self.generateCoordinates()  # genera las posibles coordenadas
+
+        if self.checkNavigate():
+            new_node = self.generateNode(self.state.contenedores, self.g + 3500, self.state.asignados, self.state.mapa,
+                                         self.state.puerto_del_barco + 1)  # generamos nuevo nodo
+
+
+            ac = ["Navegar", self.state.puerto_del_barco, self.state.puerto_del_barco + 1]
+            new_node.actions.append(ac)
+            self.children.append(new_node)  # añade a children
+
+        for cont in range(len(self.state.contenedores)):
+
+            action = self.checkAction(cont)  # comprueba que hacer: si cargar o descargar
+
+            coste, contenedor, new_mapa, new_asignados = self.generateParams(cont)[1:]
+
+            if action == "descarga":  # hay que descargar
+                # checkear si tiene contenedores desordenados
+                new_contenedores = copy.deepcopy(
+                    self.state.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
+                new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
+                                             self.state.puerto_del_barco)  # generamos un nuevo nodo
+
+                x, y = new_node.state.contenedores[cont][0], new_node.state.contenedores[cont][1]
+                cont_nuevo = new_node.checkReordenate(cont, x, y)
+
+
+                new_node.descargar(cont_nuevo)
+                self.checkDifferent(new_node, new_contenedores, cont_nuevo, action)
+
+            if action == "carga":
+
+                for pos in posibles_coordenadas:  # por cada posible combinación
+                    x, y = pos[0], pos[1]
+                    new_contenedores = copy.deepcopy(
+                        self.state.contenedores)  # creamos nueva lista de contenedores para el nuevo estado
+                    coste, contenedor, new_mapa, new_asignados = self.generateParams(cont)[1:]
+
+                    new_node = self.generateNode(new_contenedores, coste, new_asignados, new_mapa,
+                                                 self.state.puerto_del_barco)  # generamos un nuevo nodo
+
+
+                    new_node.cargar(cont, x, y)
+                    self.checkDifferent(new_node, new_contenedores, cont, action)
 
 
 def busqueda(nodo_inicial, nodo_final):
