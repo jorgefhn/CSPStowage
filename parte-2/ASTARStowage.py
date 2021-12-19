@@ -256,7 +256,6 @@ class Node:
 
         return (mapa)
 
-
     def checkDifferent(self, new_node, new_contenedores: list, cont: int, action: str, cont_id=None, pos_x = None, pos_y = None):
 
         if new_contenedores[cont] != self.state.contenedores[cont] and new_node not in self.path:
@@ -273,8 +272,6 @@ class Node:
                 new_actions.append(ac)
 
             new_node.actions = new_actions
-
-
 
     #metodo que expande un nodo
     def expandir(self):
@@ -310,7 +307,6 @@ class Node:
                 cont_nuevo = new_node.checkReordenate(cont, pos_x, pos_y)
 
 
-
                 new_node.descargar(cont_nuevo)
 
                 self.checkDifferent(new_node, new_contenedores, cont_nuevo, action, array_contenedores[cont][0],pos_x,pos_y)
@@ -336,50 +332,6 @@ class Node:
 
 
 def busqueda(nodo_inicial, nodo_final):
-    """método de búsqueda de A*"""
-    result = [-1, -1]
-    nodos_expandidos = 0
-    exito = False
-    abierta, cerrada = [nodo_inicial], []
-
-    while (len(abierta) > 0) and not exito:
-        # buscamos el de mínimo coste
-
-        coste_minimo, min_cost_serial = sys.maxsize, 0
-        for el in range(len(abierta)):
-            # print("Coste: ",abierta[el].costeTotal())
-            if abierta[el].costeTotal() < coste_minimo:
-                coste_minimo = abierta[el].costeTotal()
-                min_cost_serial = el
-
-        minimo = abierta.pop(min_cost_serial)
-
-        if minimo not in cerrada:
-
-            if minimo.checkEqual(nodo_final):
-                exito = True
-                minimo.path.append(minimo)  # añadimos el nodo final
-                ultimo_nodo = minimo
-
-            if not exito:
-                nodos_expandidos += 1
-                minimo.expandir()
-                cerrada.append(minimo)
-
-                for child in minimo.children:
-                    if child not in cerrada:
-                        abierta.append(child)
-
-    if exito:
-        # print("Solución encontrada")
-        result[0] = ultimo_nodo
-        result[1] = nodos_expandidos
-        return result
-    else:
-        return result
-
-
-def busqueda_v2(nodo_inicial, nodo_final):
     """método de búsqueda de A*"""
     result = [-1, -1]
     nodos_expandidos = 0
@@ -450,7 +402,7 @@ nodo_inicial = Node(estado_inicial)
 nodo_final = Node(estado_final)
 
 t_inicio = time.time()
-ult_nodo, nodos_expandidos = busqueda_v2(nodo_inicial, nodo_final)
+ult_nodo, nodos_expandidos = busqueda(nodo_inicial, nodo_final)
 t_final = time.time()
 
 # ----------------------------------------- Save Output ---------------------------------------------------
