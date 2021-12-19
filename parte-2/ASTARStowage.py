@@ -123,7 +123,7 @@ class Node:
             self.children.append(new_node)  # añade el nodo a los hijos
             new_node.path.append(self)
 
-            new_actions = copy.deepcopy(new_node.parent.actions)
+            new_actions = copy.deepcopy(self.actions)
 
             if action == "carga":
                 # id del contenedor,posición x,y y puerto
@@ -445,7 +445,6 @@ nodo_final = Node(estado_final)
 
 t_inicio = time.time()
 ult_nodo, nodos_expandidos = busqueda_v2(nodo_inicial, nodo_final)
-print(ult_nodo)
 t_final = time.time()
 
 # ----------------------------------------- Save Output ---------------------------------------------------
