@@ -306,7 +306,7 @@ class Node:
                 pos_y = copy.deepcopy(y)
                 cont_nuevo = new_node.checkReordenate(cont, pos_x, pos_y)
 
-
+                x_antes,y_antes = new_contenedores[cont_nuevo][0],new_contenedores[cont_nuevo][1]
                 new_node.descargar(cont_nuevo)
 
                 self.checkDifferent(new_node, new_contenedores, cont_nuevo, action, array_contenedores[cont][0],pos_x,pos_y)
