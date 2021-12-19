@@ -13,12 +13,9 @@ import subprocess
 import sys
 import heapdict
 import outputs_sol
+import input_parser
 
-# para abrir el fichero y cargar sus argumentos
-
-
-# --------------------------------------------------------
-
+"""################### OBTENCION DE LOS FICHEROS DESDE STDIN #######################"""
 
 parser = ArgumentParser(description='%(prog)s is an Argument Parser demo')
 parser.add_argument('carpeta', help='carpeta principal')
@@ -33,78 +30,23 @@ ruta_mapa = ruta + str(args.mapa) + ".txt"
 ruta_contenedores = ruta + str(args.contenedores) + ".txt"
 
 
-# heuristica = str(args.heuristica)
-
-
-# --------------------------------------------------------
-# metodos auxiliares
-def devuelveContenedores(contenedores: str):
-    """Método auxiliar, coge str de contenedores y los devuelve en tuplas"""
-    lista_contenedores = contenedores.split('\n')
-    array_contenedores = []
-    for contenedor in lista_contenedores:
-        array_contenedores.append(contenedor.split(' '))
-    return array_contenedores
-
-
-def generateMap(mapa: str):
-    """Método auxiliar que convierte el str del mapa en una matriz"""
-    fila = mapa.split('\n')  # los divide por filas
-    max_prof = len(fila)
-    n_pilas = len(fila[0].split(' '))  # los divide por columnas
-    return calculaMatriz(mapa, n_pilas, max_prof)
-
-
-def calculaMatriz(mapa, n_pilas: int, max_prof: int):
-    """Método auxiliar que coge mapa, filas y columnas y te devuelve una matriz con los datos"""
-
-    mapa, matriz = mapa.split(), []
-    for fila in range(max_prof):
-        matriz.append([])
-        for columna in range(n_pilas):
-            matriz[fila].append(mapa[fila * n_pilas + columna])
-
-    return matriz
-
-
-def drawMap(mapa: list):
-    """Método auxiliar que imprime el mapa"""
-    map = ""
-    for fila in mapa:
-        for columna in fila:
-            map += columna + " "
-        map += "\n"
-
-    return map
-
-
 # --------------------------------------------------------
 
-# mapa
+# mapa, contenedores, matriz con el mapa
 mapa = open(ruta_mapa).read()
-# contenedores
 contenedores = open(ruta_contenedores).read()
-
-print("Contenedores:")
-array_contenedores = devuelveContenedores(contenedores)
-print(array_contenedores)
-
-# matriz con el mapa
-mapa = generateMap(mapa)
+array_contenedores = input_parser.devuelveContenedores(contenedores)
+mapa = input_parser.generateMap(mapa)
 n_pilas, max_prof = len(mapa[0]), len(mapa)
 
+print("Contenedores:")
+print(array_contenedores)
 print("Generamos mapa: ")
-print(drawMap(mapa))
+print(input_parser.drawMap(mapa))
 
 
-# --------------------------------------------------------
+"""########################## CODIGO RELATIVO A LA IMPLEMENTACION ##################################"""
 
-
-# estado: [(para todo contenedor, [x,y,puerto_actual_contenedor]), puerto_actual_barco ]
-# si un contenedor está asignado, [posx,posy,puerto_actual]. Si no está asignado a ningún puerto, [None,None, B (barco)]. Si está descargado en un puerto, [None,None, puerto].
-
-# información estática que poseen los estados: array original de contenedores [id,tipo,puerto_destino]
-# información dinámica: posicion x,y de cada contenedor, puerto en el que está cada contenedor (en su defecto, en el barco), mapa de carga, puerto actual del barco
 
 class State:
     def __init__(self, contenedores: list, puerto_actual_del_barco: int, mapa: list):
@@ -113,11 +55,9 @@ class State:
         self.mapa = mapa
         self.asignados = {}
 
-    # self.posibilidades = [] #lista de posibilidades
-
     def __str__(self):
         var = str(self.contenedores) + "\n"
-        var += str(drawMap(self.mapa)) + "\n"
+        var += str(input_parser.drawMap(self.mapa)) + "\n"
         var += str(self.asignados)
         var += "\nPuerto del barco: " + str(self.puerto_del_barco) + "\n"
         return var
@@ -129,9 +69,9 @@ class State:
 class Node:
 
     def __init__(self, state, parent=None, g=0, h=0, actions=[], id_heuristica=args.heuristica):
-        self.children = []  # lista de nodos hijos
-        self.parent = parent  # si tiene nodo padre o no
-        self.g = g  # funcion de costes de operadores aplicados
+        self.children = []      # lista de nodos hijos
+        self.parent = parent    # si tiene nodo padre o no
+        self.g = g              # funcion de costes de operadores aplicados
         self.state = state
         self.h = self.elegirHeuristica(id_heuristica)
         self.f = self.costeTotal()  # distancia del nodo al nodo inicial (ver si se puede usar)
@@ -139,13 +79,19 @@ class Node:
         if parent:
             self.path = parent.path
             self.actions = parent.actions
-
-
         else:
             self.path = []
             self.actions = []
-    # métodos que comprueban la acción a realizar
 
+    # métodos propios del nodo
+    def __str__(self):
+        var = str(self.state) + "\nFunción de evaluación: " + str(self.costeTotal()) + "\n"
+        return var
+
+    def __eq__(self, other):
+        return self.state == other.state
+
+    # métodos que comprueban la acción a realizar
     def checkAction(self, cont: int):
         puerto_contenedor = self.state.contenedores[cont][2]
         puerto_destino = int(array_contenedores[cont][2])
@@ -303,7 +249,6 @@ class Node:
             return h3(mapa, self.state.puerto_del_barco)
 
     # metodo que crea nodos
-
     def generateNode(self, new_contenedores: list, coste: int, new_asignados: list, new_mapa: list, new_puerto):
         """método auxiliar que genera nodo"""
         new_state = State(new_contenedores, new_puerto, new_mapa)
@@ -313,6 +258,7 @@ class Node:
         new_node.g += coste
         return new_node
 
+    #metodo que calcula la f del nodo
     def costeTotal(self):
         return self.g + self.h
 
@@ -333,14 +279,7 @@ class Node:
 
         return (mapa)
 
-    # métodos propios del nodo
-    def __str__(self):
-        var = str(self.state) + "\nFunción de evaluación: " + str(self.costeTotal()) + "\n"
-        return var
-
-    def __eq__(self, other):
-        return self.state == other.state
-
+    #metodo que expande un nodo
     def expandir(self):
 
         # crear todas las posibilidades válidas y añadirlas
