@@ -391,7 +391,7 @@ class Node:
 
 def busqueda(nodo_inicial, nodo_final):
     """método de búsqueda de A*"""
-
+    result = [-1, -1]
     nodos_expandidos = 0
     exito = False
     abierta, cerrada = [nodo_inicial], []
@@ -426,12 +426,11 @@ def busqueda(nodo_inicial, nodo_final):
 
     if exito:
         # print("Solución encontrada")
-
-        return ultimo_nodo, nodos_expandidos
-
-
+        result[0] = ultimo_nodo
+        result[1] = nodos_expandidos
+        return result
     else:
-        return False
+        return result
 
 
 # --------------------------------------------------------
@@ -462,12 +461,9 @@ nodo_final = Node(estado_final)
 
 # print("Nodo final: ",nodo_final)
 
-
 t_inicio = time.time()
 ult_nodo, nodos_expandidos = busqueda(nodo_inicial, nodo_final)
 t_final = time.time()
-
-
 
 # -----Save Output---------------------------------------------------
 outputs_sol.output_sol(args.mapa,args.contenedores,args.heuristica, ult_nodo)
